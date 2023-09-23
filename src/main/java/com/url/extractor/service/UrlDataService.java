@@ -1,16 +1,16 @@
 package com.url.extractor.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.url.extractor.model.UrlData;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.ui.Model;
 
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UrlDataService {
@@ -39,11 +39,11 @@ public class UrlDataService {
             webClient.getOptions().setJavaScriptEnabled(false);
             webClient.getOptions().setCssEnabled(false);
 
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode jsonNode = mapper.readTree(url);
-            String urlChecked = jsonNode.get("url").asText();
+//            ObjectMapper mapper = new ObjectMapper();
+//            JsonNode jsonNode = mapper.readTree(url);
+//            String urlChecked = jsonNode.get("url").asText();
             // Fetch the web page
-            HtmlPage page = webClient.getPage(urlChecked);
+            HtmlPage page = webClient.getPage(url);
 
             //THIS IS WORKING
 //            String headingText = page.getTitleText();
@@ -53,12 +53,11 @@ public class UrlDataService {
 //            LIST OF FORMS
 //            System.out.println("PAGE : "+page.getForms());
             //DUMPING WEBSITE DATA
-            String name = "C:\\Users\\susha\\Desktop\\dump\\websiteData" + System.currentTimeMillis();
-            File file = new File(name);
-            page.getPage().save(file);
+//            String name = "C:\\Users\\susha\\Desktop\\dump\\websiteData" + System.currentTimeMillis();
+//            File file = new File(name);
+//            page.getPage().save(file);
             //GETTING BASE URL
 //            System.out.println(page.getBaseURL());
-
 
             // Extract multiple elements and iterate over them
             List<String> tags = new ArrayList<>();
@@ -74,6 +73,7 @@ public class UrlDataService {
             urlData.setCategory(page.getContentType());
             urlData.setBaseUrl(String.valueOf(page.getBaseURL()));
             List<String> KeywordList = Arrays.stream(page.getVisibleText().toLowerCase().split(" ")).toList();
+            urlData.setBaseUrl(page.getTitleText() + " : " + page.getVisibleText());
             urlData.setKeyword(KeywordList);
             urlData.setAnchorTags(tags);
 
@@ -84,6 +84,11 @@ public class UrlDataService {
         return urlData;
     }
 
+    public List<String> getBaseString() {
+//        System.out.println(data.stream().collect(Collectors.groupingBy(UrlData::getTopics, Collectors.groupingBy(UrlData::getBaseString))));
+//        System.out.println(data.stream().map(Collectors.groupingBy(UrlData::getBaseString),Collectors.));
+        return data.stream().map(UrlData::getBaseString).collect(Collectors.toList());
+    }
 
     //ADDING DATA TO LIST
     public ResponseEntity<Optional<UrlData>> insertData(String url) {
@@ -114,11 +119,12 @@ public class UrlDataService {
     }
 
     //GET ALL DATA
-    public ResponseEntity<Optional<List<UrlData>>> getAllUrlData() {
+    public ResponseEntity<Optional<List<UrlData>>> getAllUrlData(Model m) {
         List<UrlData> urlData = data;
         if (urlData == null) {
             return ResponseEntity.noContent().build();
         }
+        m.addAttribute("data", urlData);
         return ResponseEntity.ok(Optional.of(urlData));
     }
 

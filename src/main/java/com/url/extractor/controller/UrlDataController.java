@@ -1,6 +1,7 @@
 package com.url.extractor.controller;
 
 
+import org.springframework.ui.Model;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -10,6 +11,7 @@ import com.url.extractor.service.UrlDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -17,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@RestController
+@Controller
 @RequestMapping("/urlData")
 public class UrlDataController {
 
@@ -30,8 +32,9 @@ public class UrlDataController {
     }
 
     @PostMapping("/insert")
-    public ResponseEntity<Optional<UrlData>> insert(@RequestBody String url) {
-        return urlDataService.insertData(url);
+    public ResponseEntity<?> insert(@RequestParam("baseUrl") String url, Model m) {
+        m.addAttribute("urlData",urlDataService.insertData(url));
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/insertBulk")
@@ -62,8 +65,8 @@ public class UrlDataController {
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<Optional<List<UrlData>>> getAll() {
-        return urlDataService.getAllUrlData();
+    public ResponseEntity<Optional<List<UrlData>>> getAll(@ModelAttribute Model m) {
+        return urlDataService.getAllUrlData(m);
     }
 
     @GetMapping("/searchByTopic/{topic}")
@@ -84,6 +87,11 @@ public class UrlDataController {
     @GetMapping("/getAllTag")
     public ResponseEntity<List<List<String>>> getAllTag(String tag) {
         return urlDataService.getAllTag(tag);
+    }
+
+    @GetMapping("/getBase")
+    public List<String> getBaseString() {
+        return urlDataService.getBaseString();
     }
 
     @GetMapping("/search/{keyword}")
