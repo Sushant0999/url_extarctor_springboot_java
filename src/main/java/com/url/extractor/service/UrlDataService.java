@@ -58,7 +58,7 @@ public class UrlDataService {
 //            page.getPage().save(file);
             //GETTING BASE URL
 //            System.out.println(page.getBaseURL());
-
+            System.out.println(page);
             // Extract multiple elements and iterate over them
             List<String> tags = new ArrayList<>();
             for (HtmlAnchor link : page.getAnchors()) {

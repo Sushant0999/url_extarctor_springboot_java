@@ -1,13 +1,11 @@
 package com.url.extractor.model;
 
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import lombok.ToString;
-
 import java.util.List;
-@Getter
-@Setter
+
+@Data
 @ToString
 public class UrlData {
 
@@ -18,5 +16,6 @@ public class UrlData {
     private List<String> anchorTags;
     private String baseString;
     private List<String> keyword;
+    private List<byte[]> images;
 
 }
