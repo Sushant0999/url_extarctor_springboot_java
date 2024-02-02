@@ -1,12 +1,14 @@
 import axios from 'axios';
+import ToastNotification from '../utils/ToastNotification';
 
 export const addLinks = async (link) => {
+
 
     const baseUrl = process.env.REACT_APP_BASE_URL;
     const url = `${baseUrl}/urlData/insert`;
 
-    console.log("baseUrl", baseUrl);
-    console.log("url", url);
+    // console.log("baseUrl", baseUrl);
+    // console.log("url", url);
 
     const list = []
     list.push(link)
@@ -15,14 +17,26 @@ export const addLinks = async (link) => {
     try {
         const response = await axios.post(url, list, {
             headers: {
-                // 'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json',
-                // mode: 'cors'
             },
         });
         const data = response.data;
 
-        console.log(data);
+        switch (response.status) {
+            case 200:
+                <ToastNotification title={'Worked'} />
+                break;
+            case 204:
+                <ToastNotification title={'No Content'} />
+                break;
+            case 500:
+                <ToastNotification title={'Server Error'} />
+                break;
+            default:
+                <ToastNotification title={'Something Went Wrong'} />
+                break;
+        }
+
         return data;
     } catch (error) {
         console.error('Error fetching images:', error);

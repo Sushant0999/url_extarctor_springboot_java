@@ -53,3 +53,6 @@ url_exct_frontend/node_modules
 ./frontend/url_exct_frontend/npm-debug.log*
 ./frontend/url_exct_frontend/yarn-debug.log*
 ./frontend/url_exct_frontend/yarn-error.log*
+
+# data
+./data

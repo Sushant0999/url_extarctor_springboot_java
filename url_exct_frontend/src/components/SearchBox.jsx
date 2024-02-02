@@ -1,6 +1,7 @@
 import { Box, Button, Input, useToast } from '@chakra-ui/react';
 import React, { useState } from 'react';
 import { addLinks } from '../apis/AddLinks';
+import { ScatterBoxLoaderComponent } from './loaders/ScatterBoxLoaderComponent';
 
 export default function SearchBox() {
     const inputPlaceholder = 'Enter Url';
@@ -29,14 +30,18 @@ export default function SearchBox() {
     }
 
     const handleSearch = async () => {
-        if (inputText && !validateLinks(inputText)) {
+        if (inputText) {
             setLoading(true);
             await addLinks(inputText);
         }
         else {
-            setLoading(false);
+            setTimeout(() => {
+                setLoading(false);
+            }, 1000);
         }
-        setLoading(false);
+        setTimeout(() => {
+            setLoading(false);
+        }, 1000);
     };
 
     function addToast() {
@@ -46,7 +51,7 @@ export default function SearchBox() {
     return (
         <>
             {isLoading ?
-                <><h1>LOADDING</h1></> :
+                <Box sx={{ margin: '10% 0', display: 'flex', justifyContent: 'center', justifyItems: 'center' }}><ScatterBoxLoaderComponent /></Box> :
                 <Box
                     gap={4}
                     sx={{

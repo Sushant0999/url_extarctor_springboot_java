@@ -106,13 +106,19 @@ public class UrlDataService {
     }
 
     //INSERTING MULTIPLE URLS
-    public void getData(List<String> urls) throws Exception {
+    public UrlData getData(List<String> urls) throws Exception {
+        UrlData data = null;
         try {
             for (String url : urls) {
-                print(url);
+              data = print(url);
             }
         } catch (Exception e) {
             throw new Exception("SOMETHING WENT WRONG");
+        }
+        if(data == null){
+            return null;
+        }else{
+            return data;
         }
     }
 

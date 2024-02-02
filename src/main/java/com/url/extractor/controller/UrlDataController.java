@@ -32,12 +32,16 @@ public class UrlDataController {
     @PostMapping("/insert")
     public ResponseEntity<?> insertBulk(@RequestBody List<String> urls) {
         System.out.println("URL INSERTED " + urls.get(0));
+        UrlData data = null;
         try{
-            urlDataService.getData(urls);
+         data  = urlDataService.getData(urls);
         }catch (Exception e){
            return ResponseEntity.internalServerError().body("SOMETHING WENT WRONG");
         }
-        return ResponseEntity.ok().build();
+        if(data == null){
+            return ResponseEntity.status(204).build();
+        }
+        return ResponseEntity.status(200).build();
     }
 
     @GetMapping("/getTags")
