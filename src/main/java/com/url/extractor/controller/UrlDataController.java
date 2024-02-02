@@ -30,11 +30,11 @@ public class UrlDataController {
 
 
     @PostMapping("/insert")
-    public ResponseEntity<?> insertBulk(@RequestBody List<String> urls) {
+    public ResponseEntity<?> insertBulk(@RequestBody List<String> urls, @RequestParam("jsEnable") Boolean jsEnable) {
         System.out.println("URL INSERTED " + urls.get(0));
         UrlData data = null;
         try{
-         data  = urlDataService.getData(urls);
+         data  = urlDataService.getData(urls, jsEnable);
         }catch (Exception e){
            return ResponseEntity.internalServerError().body("SOMETHING WENT WRONG");
         }

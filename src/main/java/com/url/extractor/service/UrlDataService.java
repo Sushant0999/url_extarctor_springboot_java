@@ -30,7 +30,7 @@ public class UrlDataService {
 
 
     //GETTING DATA FROM URL/WEBPAGE
-    public static UrlData print(String url) throws IOException {
+    public static UrlData print(String url, boolean jsEnable) throws IOException {
         UrlData urlData = null;
 
         try {
@@ -43,7 +43,7 @@ public class UrlDataService {
 
         try (WebClient webClient = new WebClient()) {
             // Disable JavaScript (optional)
-            webClient.getOptions().setJavaScriptEnabled(false);
+            webClient.getOptions().setJavaScriptEnabled(jsEnable);
             webClient.getOptions().setCssEnabled(false);
             // Fetch the web page
             HtmlPage page = webClient.getPage(url);
@@ -106,11 +106,11 @@ public class UrlDataService {
     }
 
     //INSERTING MULTIPLE URLS
-    public UrlData getData(List<String> urls) throws Exception {
+    public UrlData getData(List<String> urls, boolean jsEnable) throws Exception {
         UrlData data = null;
         try {
             for (String url : urls) {
-              data = print(url);
+              data = print(url, jsEnable);
             }
         } catch (Exception e) {
             throw new Exception("SOMETHING WENT WRONG");

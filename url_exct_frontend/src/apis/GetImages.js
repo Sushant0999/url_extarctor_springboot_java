@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 export const getImages = async () => {
-    const url = 'https://jsonplaceholder.typicode.com/photos';
+    const baseUrl = process.env.REACT_APP_BASE_URL;
+    const url = `${baseUrl}/urlData/insert`;
 
     try {
         const response = await axios.get(url);

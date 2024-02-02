@@ -1,13 +1,23 @@
-import { Box, Button, Input, useToast } from '@chakra-ui/react';
-import React, { useState } from 'react';
+import { Box, Button, Input, Switch, useToast } from '@chakra-ui/react';
+import React, { useEffect, useState } from 'react';
 import { addLinks } from '../apis/AddLinks';
 import { ScatterBoxLoaderComponent } from './loaders/ScatterBoxLoaderComponent';
+import { useNavigate } from 'react-router-dom';
+import { Text } from '@chakra-ui/react'
 
 export default function SearchBox() {
+
+    const navigate = useNavigate();
+
+
     const inputPlaceholder = 'Enter Url';
     const [inputText, setInputText] = useState('');
     const [isLoading, setLoading] = useState(false);
+    const [enable, isEnable] = useState(true);
 
+    useEffect(() => {
+        isEnable(true);
+    }, []);
 
     const toast = useToast()
     const toastIdRef = React.useRef()
@@ -30,14 +40,29 @@ export default function SearchBox() {
     }
 
     const handleSearch = async () => {
+        let message = '';
+        let status = '';
+        function createToast() {
+            toastIdRef.current = toast({ description: message, status: status, isClosable: true })
+        }
         if (inputText) {
             setLoading(true);
-            await addLinks(inputText);
+            const response = await addLinks(inputText, enable);
+            console.log('from searchbox ', response);
+            if (response.status === 200) {
+                navigate('/result');
+            }
+            message = 'Success';
+            status = 'success';
+            createToast();
         }
         else {
             setTimeout(() => {
                 setLoading(false);
             }, 1000);
+            message = 'Error'
+            status = 'error';
+            createToast();
         }
         setTimeout(() => {
             setLoading(false);
@@ -45,7 +70,7 @@ export default function SearchBox() {
     };
 
     function addToast() {
-        toastIdRef.current = toast({ description: 'Input Empty', isClosable: true })
+        toastIdRef.current = toast({ description: 'Input Empty', status: 'warning', isClosable: true })
     }
 
     return (
@@ -77,6 +102,10 @@ export default function SearchBox() {
                         fontSize="lg"
                         textAlign="center"
                     />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '80%', textAlign: 'center', textJustify: 'center' }}>
+                        <Text fontSize={'20px'}>Enable Javascripts</Text>
+                        <Switch sx={{ pt: 1.5 }} isChecked={enable} onChange={(e) => isEnable(e.target.checked)} colorScheme='teal' size='lg' />
+                    </Box>
                     <Button colorScheme='teal' fontSize={'15px'} variant='outline' onClick={inputText ? handleSearch : addToast} >
                         Search
                     </Button>

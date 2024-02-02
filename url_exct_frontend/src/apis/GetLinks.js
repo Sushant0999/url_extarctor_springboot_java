@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const getTags = async () => {
+export const getLink = async () => {
 
     const baseUrl = process.env.REACT_APP_BASE_URL;
     const url = `${baseUrl}/urlData/getTags`;
@@ -12,6 +12,7 @@ export const getTags = async () => {
             },
         });
         const data = response.data;
+        console.log(data);
         return data;
     } catch (error) {
         console.error('Error fetching tags:', error);
