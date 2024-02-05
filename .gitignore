@@ -37,4 +37,7 @@ url_exct_frontend/node_modules
 ./frontend/url_exct_frontend/yarn-error.log*
 
 # data
-data/
+data
+
+# target
+target
