@@ -26,18 +26,18 @@ export default function SearchBox() {
         setInputText(event.target.value);
     };
 
-    function validateLinks(urls) {
-        if (typeof urls === 'string') {
-            const urlRegex = /^(ftp|http|https):\/\/[^ "]+$/;
-            return urlRegex.test(urls);
-        } else if (Array.isArray(urls)) {
-            const urlRegex = /^(ftp|http|https):\/\/[^ "]+$/;
-            return urls.some(url => urlRegex.test(url));
-        } else {
-            console.error('Invalid input type');
-            return false;
-        }
-    }
+    // function validateLinks(urls) {
+    //     if (typeof urls === 'string') {
+    //         const urlRegex = /^(ftp|http|https):\/\/[^ "]+$/;
+    //         return urlRegex.test(urls);
+    //     } else if (Array.isArray(urls)) {
+    //         const urlRegex = /^(ftp|http|https):\/\/[^ "]+$/;
+    //         return urls.some(url => urlRegex.test(url));
+    //     } else {
+    //         console.error('Invalid input type');
+    //         return false;
+    //     }
+    // }
 
     const handleSearch = async () => {
         let message = '';
@@ -55,11 +55,32 @@ export default function SearchBox() {
                 status = 'success';
                 createToast();
             } else if (response.status === 204) {
-                message = 'Invalid Url or Resource Down';
+                message = 'Invalid Url or Resource Down Try Enable/Disable JavaScript';
                 status = 'info';
                 createToast();
             }
-
+            // switch (response.status) {
+            //     case 200:
+            //         navigate('/result');
+            //         message = 'Success';
+            //         status = 'success';
+            //         createToast();
+            //         break;
+            //     case 204:
+            //         message = 'Invalid Url or Resource Down Try Enable/Disable JavaScript';
+            //         status = 'info';
+            //         createToast();
+            //         break;
+            //     case 500:
+            //         message = 'Server Error';
+            //         status = 'error';
+            //         createToast();
+            //         break;
+            //     default:
+            //         message = 'Try Again After Sometimes';
+            //         status = 'info';
+            //         break;
+            // }
         }
         else {
             setTimeout(() => {

@@ -12,6 +12,8 @@ import java.util.zip.ZipOutputStream;
 
 public class FilesToZip {
     public static void files() throws IOException {
+        //TODO
+// will use a list of list filename to then pass this list of filename to this function
         String file1 = "src/main/resources/zipTest/test1.txt";
         String file2 = "src/main/resources/zipTest/test2.txt";
         final List<String> srcFiles = Arrays.asList(file1, file2);

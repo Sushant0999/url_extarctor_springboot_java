@@ -80,7 +80,7 @@ public class UrlDataService {
             urlData.setKeyword(KeywordList);
             urlData.setAnchorTags(tags);
             data.add(urlData);
-            
+
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println(e.getMessage());

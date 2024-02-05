@@ -1,0 +1,9 @@
+# backend
+data
+target
+.idea
+
+# frontend
+/url_exct_frontend/node_modules
+/url_exct_frontend/README.md
+
