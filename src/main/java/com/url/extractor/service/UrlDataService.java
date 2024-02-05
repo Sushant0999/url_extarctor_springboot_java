@@ -21,9 +21,9 @@ import static java.util.Locale.filter;
 @Service
 public class UrlDataService {
 
-    public static ArrayList<UrlData> data = new ArrayList<>();
+    public static ArrayList<UrlData> data = null;
 
-    public static List<String> imageList = new ArrayList<>();
+    public static List<String> imageList = null;
 
 
     public static String pageName = "";
@@ -32,6 +32,7 @@ public class UrlDataService {
     //GETTING DATA FROM URL/WEBPAGE
     public static UrlData print(String url, boolean jsEnable) throws IOException {
         UrlData urlData = null;
+        data = new ArrayList<>();
 
         try {
             String filePath = System.getProperty("user.dir");
@@ -43,13 +44,12 @@ public class UrlDataService {
 
         try (WebClient webClient = new WebClient()) {
             // Disable JavaScript (optional)
-            webClient.getOptions().setJavaScriptEnabled(jsEnable);
+            webClient.getOptions().setJavaScriptEnabled(!jsEnable);
             webClient.getOptions().setCssEnabled(false);
             // Fetch the web page
             HtmlPage page = webClient.getPage(url);
             //THIS IS WORKING
             String headingText = page.getTitleText();
-//            System.out.println("Heading: " + headingText);
             //ALL TEXT
 //            System.out.println("htmlElement: " + page.getVisibleText());
 //            LIST OF FORMS
@@ -79,14 +79,8 @@ public class UrlDataService {
             urlData.setBaseUrl(page.getTitleText() + " : " + page.getVisibleText());
             urlData.setKeyword(KeywordList);
             urlData.setAnchorTags(tags);
-            if (data.size() > 10) {
-                data.remove(10);
-                data.add(0, urlData);
-            } else {
-                data.add(0, urlData);
-            }
-
-
+            data.add(urlData);
+            
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println(e.getMessage());
@@ -123,8 +117,12 @@ public class UrlDataService {
     }
 
     //GET ALL ANCHOR TAGS
-    public List<List<String>> getAllTags() {
-        return data.stream().map(UrlData::getAnchorTags).collect(Collectors.toList());
+    public List<String> getAllTags() {
+        return data.stream()
+                .map(UrlData::getAnchorTags) // Map each UrlData object to its list of anchor tags
+                .flatMap(List::stream) // Flatten the lists of anchor tags into a single stream
+                .distinct() // Ensure uniqueness of anchor tags
+                .collect(Collectors.toList()); // Collect the unique anchor tags into a list
     }
 
     public boolean searchString(String s) {
@@ -139,6 +137,7 @@ public class UrlDataService {
     }
 
     public List<String> getImages() throws IOException {
+        imageList = new ArrayList<>();
         String filePath = System.getProperty("user.dir");
         File directoryPath = new File(filePath + "\\data\\temp\\");
         String dirPath = Arrays.toString(directoryPath.list());
@@ -150,9 +149,6 @@ public class UrlDataService {
                 if (isImage.isPresent() && isImage.get()) {
                     imageList.add(path.toString());
                 }
-//                else {
-//                    System.out.println("Non-image File: " + path.toString());
-//                }
             });
 
             fileList.close();
@@ -162,12 +158,12 @@ public class UrlDataService {
         return imageList;
     }
 
-    public List<byte[]> images() throws Exception {
+    public Set<byte[]> images() throws Exception {
         getImages();
         if (imageList.isEmpty()) {
-            return new ArrayList<>();
+            return new HashSet<>();
         }
-        List<byte[]> images = new ArrayList<>();
+        Set<byte[]> images = new HashSet<>();
         try{
             for (String s : imageList) {
                 File file = new File(s);
@@ -175,6 +171,7 @@ public class UrlDataService {
                 images.add(fileContent);
             }
         }catch (Exception e){
+            e.printStackTrace();
             throw new Exception("SOMETHING WENT WRONG");
         }
         return images;

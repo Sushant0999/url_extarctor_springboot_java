@@ -4,7 +4,7 @@ import { getLink } from '../../apis/GetLinks';
 
 export default function LinkCard() {
     const [isOpen, setIsOpen] = useState(false);
-    const [data, setData] = useState();
+    const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const handleOpen = () => {
@@ -53,32 +53,24 @@ export default function LinkCard() {
                                     <Skeleton height='20px' />
                                 </Stack>
                             ) : (
-                                // <Text>{JSON.stringify(data)}</Text>
-                                // if (data) {
-                                //     for (var i = 0; i < data.length; i++) {
-                                //         for (var j = i; j < data[i].length; j++) {
-                                //             console.log(data[i][j]);
-                                //         }
-                                //     }
-                                // }
                                 <TableContainer>
                                     <Table variant='simple'>
-                                        <TableCaption>Imperial to metric conversion factors</TableCaption>
                                         <Thead>
                                             <Tr>
                                                 <Th>Links</Th>
                                             </Tr>
                                         </Thead>
                                         <Tbody>
-                                            {/*  */}
+                                            {data && data.length > 0 ? (
+                                                <>
+                                                    {data.map((link) => (
+                                                        <Text href={link} key={link} id={`${link}`}>{link}</Text>
+                                                    ))}
+                                                </>
+                                            ) : (
+                                                <></>
+                                            )}
                                         </Tbody>
-                                        {/* <Tfoot>
-                                            <Tr>
-                                                <Th>To convert</Th>
-                                                <Th>into</Th>
-                                                <Th isNumeric>multiply by</Th>
-                                            </Tr>
-                                        </Tfoot> */}
                                     </Table>
                                 </TableContainer>
                             )}
@@ -92,6 +84,6 @@ export default function LinkCard() {
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-        </div>
+        </div >
     );
 }

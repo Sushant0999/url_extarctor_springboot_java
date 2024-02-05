@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text } from '@chakra-ui/react';
+import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, TableContainer, Table, TableCaption, Thead, Tr, Th, Tbody, Td, Tfoot, SimpleGrid } from '@chakra-ui/react';
+import { getImages } from '../../apis/GetImages';
+import ImageDisplay from '../../utils/ImageDisplay';
 
 export default function ImageCard() {
     const [isOpen, setIsOpen] = useState(false);
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     const handleOpen = () => {
         setIsOpen(true);
@@ -12,6 +16,18 @@ export default function ImageCard() {
         setIsOpen(false);
     };
 
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const links = await getImages();
+            setData(links);
+        } catch (error) {
+            console.error('Error fetching links:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div>
             <Card sx={{ display: 'flex', textAlign: 'center' }}>
@@ -19,26 +35,45 @@ export default function ImageCard() {
                     <Text fontSize={'30px'}>Images</Text>
                 </CardBody>
                 <CardFooter sx={{ display: 'flex', justifyContent: 'center' }}>
-                    <Button size='sm' onClick={handleOpen}>View here</Button>
+                    <Button size='sm' onClick={() => { handleOpen(); fetchData(); }}>View here</Button>
                 </CardFooter>
             </Card>
 
-            <Modal isOpen={isOpen} onClose={handleClose}>
+            <Modal isOpen={isOpen} onClose={handleClose} size={'xl'}>
                 <ModalOverlay />
                 <ModalContent>
-                    <ModalHeader>Modal Title</ModalHeader>
+                    <ModalHeader sx={{ textAlign: 'center' }}>Modal Title</ModalHeader>
                     <ModalCloseButton />
-                    {/* <ModalBody>
-                    </ModalBody> */}
+                    <ModalBody>
+                        <Box sx={{ maxH: '400px', overflowY: 'scroll' }}>
+                            {loading ? (
+                                <Stack>
+                                    <Skeleton height='200px' />
+                                    <Skeleton height='200px' />
+                                </Stack>
+                            ) : (
+                                <SimpleGrid >
+                                    {data && data.length > 0 ? (
+                                        <>
+                                            {data.map((link) => (
+                                                <ImageDisplay imageData={link} key={link} />
+                                            ))}
+                                        </>
+                                    ) : (
+                                        <></>
+                                    )}
+                                </SimpleGrid>
+                            )}
+                        </Box>
+                    </ModalBody>
                     <ModalFooter>
-                        <Button colorScheme='blue' mr={3} onClick={handleClose}>
+                        <Button sx={{ display: 'flex', justifyContent: 'flex-start' }} colorScheme='blue' mr={3} onClick={handleClose}>
                             Close
                         </Button>
                         <Button variant='ghost'>Secondary Action</Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-        </div>
+        </div >
     );
 }
-

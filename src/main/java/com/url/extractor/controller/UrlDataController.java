@@ -46,7 +46,7 @@ public class UrlDataController {
 
     @GetMapping("/getTags")
     public ResponseEntity<?> getAllTags(){
-        List<List<String>> list = urlDataService.getAllTags();
+        List<String> list = urlDataService.getAllTags();
         return ResponseEntity.ok().body(list);
     }
 

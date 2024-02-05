@@ -51,10 +51,15 @@ export default function SearchBox() {
             console.log('from searchbox ', response);
             if (response.status === 200) {
                 navigate('/result');
+                message = 'Success';
+                status = 'success';
+                createToast();
+            } else if (response.status === 204) {
+                message = 'Invalid Url or Resource Down';
+                status = 'info';
+                createToast();
             }
-            message = 'Success';
-            status = 'success';
-            createToast();
+
         }
         else {
             setTimeout(() => {
