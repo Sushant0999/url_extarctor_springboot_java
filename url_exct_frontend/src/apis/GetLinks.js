@@ -8,6 +8,7 @@ export const getLink = async () => {
     try {
         const response = await axios.get(url, {
             headers: {
+                'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json',
             },
         });

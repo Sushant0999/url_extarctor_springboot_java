@@ -1,0 +1,13 @@
+version: "3.7"
+services:
+  web:
+    container_name: urlx_front
+    build: .
+    ports:
+      - 80:80
+
+  app:
+    container_name: urlx_back
+    build: .
+    ports:
+      - 8080:8080

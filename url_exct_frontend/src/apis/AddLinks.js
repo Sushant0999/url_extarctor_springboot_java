@@ -15,7 +15,6 @@ export const addLinks = async (link, enable) => {
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json',
-
             },
             params: {
                 'jsEnable': enable

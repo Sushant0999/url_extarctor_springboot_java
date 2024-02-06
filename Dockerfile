@@ -1,54 +1,89 @@
-# STAGE 1
+## STAGE 1: Build Spring Boot application
+#FROM maven:latest as spring-build
+#
+#WORKDIR /app
+#
+#COPY pom.xml .
+#
+#COPY . .
+#
+#RUN mvn clean package
+#
+## STAGE 2: Run Spring Boot application
+#FROM openjdk:17-jre-slim as spring-runtime
+#
+#WORKDIR /app
+#
+#COPY --from=spring-build /app/target/app.jar app.jar
+#
+#EXPOSE 8080
+#
+#CMD ["java", "-jar", "app.jar"]
+#
+## STAGE 3: Build React application
+#FROM node:14.17 as react-build
+#
+#WORKDIR /app
+#
+#COPY url_exct_frontend/package*.json ./
+#
+#RUN npm install
+#
+#COPY url_exct_frontend/ ./
+#
+#RUN npm run build
+#
+## STAGE 4: Run Nginx server to serve React application
+#FROM nginx:alpine as nginx-server
+#
+#COPY --from=react-build /app/build /usr/share/nginx/html
+#
+#EXPOSE 80
+#
 
-# Use an OpenJDK runtime as the base image
-FROM openjdk:latest
+# STAGE 1: Build Spring Boot application
+#Stage 2  Use a base image with JDK and Maven
+FROM maven:3.8.4-openjdk-17 AS build
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the packaged Spring Boot application JAR file into the container
-COPY target/*.jar app.jar
+# Copy only the necessary files to leverage Docker layer caching
+COPY pom.xml .
+COPY src ./src
 
-# Expose port 8080 to the outside world
+# Build the application
+RUN mvn clean package -DskipTests
+
+# Create a minimal runtime image
+FROM openjdk:17-jdk-alpine
+WORKDIR /app
+
+# Copy the JAR file from the build stage to the current directory
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose the application port
 EXPOSE 8080
 
-# Command to run the Spring Boot application
+# Command to run the application
 CMD ["java", "-jar", "app.jar"]
 
+# STAGE 2: Build React application
+FROM node:14.17 as react-build
 
-# STAGE 2
-
-# Use an official Node.js runtime as the base image
-FROM node:14.17 as build-stage
-
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the working directory
 COPY url_exct_frontend/package*.json ./
-
-CMD ["pwd"]
-
-# Install dependencies
 RUN npm install
-
-# Copy the rest of the application code
 COPY url_exct_frontend/ ./
-
-# Build the React app for production
 RUN npm run build
 
-# Use Nginx as a lightweight server to serve the React app
+# STAGE 3: Serve React application with Nginx
 FROM nginx:alpine
 
-# Copy the built React app from the previous stage to the nginx directory
-COPY --from=build-stage /app/build /usr/share/nginx/html
+COPY --from=react-build /app/build /usr/share/nginx/html
 
-# Expose port 80 to the outside world
 EXPOSE 80
-
-# Start Nginx server when the container starts
-CMD ["nginx", "-g", "daemon off;"]
 
 
 

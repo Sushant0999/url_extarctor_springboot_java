@@ -5,7 +5,12 @@ export const getImages = async () => {
     const url = `${baseUrl}/urlData/getImages`;
 
     try {
-        const response = await axios.get(url);
+        const response = await axios.get(url, {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json',
+            }
+        });
         const data = response.data;
         return data;
     } catch (error) {
