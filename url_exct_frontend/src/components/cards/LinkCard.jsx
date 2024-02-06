@@ -28,7 +28,7 @@ export default function LinkCard() {
     };
 
     return (
-        <div>
+        <Box>
             <Card sx={{ display: 'flex', textAlign: 'center' }}>
                 <CardBody>
                     <Text fontSize={'30px'}>Links</Text>
@@ -84,6 +84,6 @@ export default function LinkCard() {
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-        </div >
+        </Box >
     );
 }

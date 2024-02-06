@@ -14,8 +14,9 @@ export default function Result() {
     return (
         <div>
             <Navbar />
-            <Box>
-                <SimpleGrid spacing={4} templateColumns='repeat(auto-fill, minmax(200px, 1fr))' p={'20px'}>
+            <Box >
+                <SimpleGrid spacing={1} templateColumns='repeat(auto-fill, minmax(200px, 1fr))' p={'20px'}
+                >
                     <LinkCard />
                     <ImageCard />
                     <TextCard />
@@ -28,7 +29,7 @@ export default function Result() {
                         <Icon>
                             <DownloadIcon />
                         </Icon>
-                        <div style={{width: '10px'}}></div>
+                        <div style={{ width: '10px' }}></div>
                         <Text>Download</Text>
                     </Button>
                 </Box>

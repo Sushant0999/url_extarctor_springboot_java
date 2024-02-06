@@ -4,7 +4,10 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.url.extractor.model.UrlData;
+import com.url.extractor.utils.ZipDirectory;
 import org.apache.commons.io.FileUtils;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -25,7 +28,6 @@ public class UrlDataService {
 
     public static List<String> imageList = null;
 
-
     public static String pageName = "";
 
 
@@ -37,6 +39,7 @@ public class UrlDataService {
         try {
             String filePath = System.getProperty("user.dir");
             FileUtils.deleteDirectory(new File(filePath + "\\data\\temp"));
+            FileUtils.deleteQuietly(new File(filePath + "\\data\\" + "temp.zip"));
             System.out.println("DIRECTORY REMOVED");
         } catch (Exception e) {
             System.out.println("NO DIRECTORY TO REMOVE");
@@ -57,7 +60,6 @@ public class UrlDataService {
             //DUMPING WEBSITE DATA
             //System.getProperties().getProperty("java.class.path").split(";")[0]  + "\\data\\"
             String filePath = System.getProperty("user.dir");
-            System.out.println(filePath);
             pageName = filePath + "\\data\\temp\\" + System.currentTimeMillis();
             File file = new File(pageName);
             page.getPage().save(file);
@@ -104,14 +106,14 @@ public class UrlDataService {
         UrlData data = null;
         try {
             for (String url : urls) {
-              data = print(url, jsEnable);
+                data = print(url, jsEnable);
             }
         } catch (Exception e) {
             throw new Exception("SOMETHING WENT WRONG");
         }
-        if(data == null){
+        if (data == null) {
             return null;
-        }else{
+        } else {
             return data;
         }
     }
@@ -164,16 +166,31 @@ public class UrlDataService {
             return new HashSet<>();
         }
         Set<byte[]> images = new HashSet<>();
-        try{
+        try {
             for (String s : imageList) {
                 File file = new File(s);
                 byte[] fileContent = Files.readAllBytes(file.toPath());
                 images.add(fileContent);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             throw new Exception("SOMETHING WENT WRONG");
         }
         return images;
+    }
+
+    public Resource sendZip() {
+        try {
+            ZipDirectory.zip();
+            String filePath = System.getProperty("user.dir");
+            File directoryPath = new File(filePath + "\\data\\");
+
+            Path paths = Paths.get(directoryPath.toURI()).resolve("temp.zip").normalize();
+            Resource resource = new UrlResource(paths.toUri());
+
+            return resource;
+        } catch (IOException e) {
+            return null;
+        }
     }
 }

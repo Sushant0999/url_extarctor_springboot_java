@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text } from '@chakra-ui/react';
+import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, Box } from '@chakra-ui/react';
 
 export default function TextCard() {
     const [isOpen, setIsOpen] = useState(false);
@@ -13,7 +13,7 @@ export default function TextCard() {
     };
 
     return (
-        <div>
+        <Box>
             <Card sx={{ display: 'flex', textAlign: 'center' }}>
                 <CardBody>
                     <Text fontSize={'30px'}>Text</Text>
@@ -38,6 +38,6 @@ export default function TextCard() {
                     </ModalFooter>
                 </ModalContent>
             </Modal>
-        </div>
+        </Box>
     );
 }
