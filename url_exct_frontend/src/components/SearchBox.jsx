@@ -49,38 +49,43 @@ export default function SearchBox() {
             setLoading(true);
             const response = await addLinks(inputText, enable);
             console.log('from searchbox ', response);
-            if (response.status === 200) {
-                navigate('/result');
-                message = 'Success';
-                status = 'success';
-                createToast();
-            } else if (response.status === 204) {
-                message = 'Invalid Url or Resource Down Try Enable/Disable JavaScript';
-                status = 'info';
-                createToast();
-            }
-            // switch (response.status) {
-            //     case 200:
-            //         navigate('/result');
-            //         message = 'Success';
-            //         status = 'success';
-            //         createToast();
-            //         break;
-            //     case 204:
-            //         message = 'Invalid Url or Resource Down Try Enable/Disable JavaScript';
-            //         status = 'info';
-            //         createToast();
-            //         break;
-            //     case 500:
-            //         message = 'Server Error';
-            //         status = 'error';
-            //         createToast();
-            //         break;
-            //     default:
-            //         message = 'Try Again After Sometimes';
-            //         status = 'info';
-            //         break;
+            // if (response.status === 200) {
+            //     navigate('/result');
+            //     message = 'Success';
+            //     status = 'success';
+            //     createToast();
+            // } else if (response.status === 204) {
+            //     message = 'Invalid Url or Resource Down Try Enable/Disable JavaScript';
+            //     status = 'info';
+            //     createToast();
             // }
+            // else if (response == undefined) {
+            //     message = 'Something Went Wrong';
+            //     status = 'error';
+            //     createToast();
+            // }
+            switch (response.status) {
+                case 200:
+                    navigate('/result');
+                    message = 'Success';
+                    status = 'success';
+                    createToast();
+                    break;
+                case 204:
+                    message = 'Invalid Url or Resource Down Try Enable/Disable JavaScript';
+                    status = 'info';
+                    createToast();
+                    break;
+                case undefined:
+                    message = 'Server Error';
+                    status = 'error';
+                    createToast();
+                    break;
+                default:
+                    message = 'Try Again After Sometimes';
+                    status = 'info';
+                    break;
+            }
         }
         else {
             setTimeout(() => {

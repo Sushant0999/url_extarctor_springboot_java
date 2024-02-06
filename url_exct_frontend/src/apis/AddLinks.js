@@ -10,8 +10,10 @@ export const addLinks = async (link, enable) => {
     const list = []
     list.push(link)
 
+    let response;
+
     try {
-        const response = await axios.post(url, list, {
+        response = await axios.post(url, list, {
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json',
@@ -20,10 +22,13 @@ export const addLinks = async (link, enable) => {
                 'jsEnable': enable
             }
         });
-        return response;
+        // return response;
 
     } catch (error) {
         console.error('Error fetching images:', error);
         throw error;
+    }
+    finally {
+        return response;
     }
 };

@@ -1,21 +1,15 @@
 import React from 'react'
 import Navbar from '../components/Navbar'
-import { Box, Button, Icon, SimpleGrid, Text } from '@chakra-ui/react'
+import { Box, Button, SimpleGrid, Text } from '@chakra-ui/react'
 import LinkCard from '../components/cards/LinkCard'
 import ImageCard from '../components/cards/ImageCard'
 import TextCard from '../components/cards/TextCard'
 import { useNavigate } from 'react-router-dom'
-import { DownloadIcon } from '@chakra-ui/icons'
-import { getData } from '../apis/GetData'
+import DownloadFileComponent from '../components/DownloadToast'
 
 export default function Result() {
 
     const navigate = useNavigate();
-
-    const handleDownload = async () => {
-        const data = await getData();
-        console.log(data);
-    }
 
     return (
         <div>
@@ -31,13 +25,7 @@ export default function Result() {
                     <Button onClick={() => navigate('/')}>
                         <Text>Back</Text>
                     </Button>
-                    <Button onClick={() => handleDownload()}>
-                        <Icon>
-                            <DownloadIcon />
-                        </Icon>
-                        <div style={{ width: '10px' }}></div>
-                        <Text>Download</Text>
-                    </Button>
+                    <DownloadFileComponent />
                 </Box>
             </Box>
         </div>
