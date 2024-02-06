@@ -6,10 +6,16 @@ import ImageCard from '../components/cards/ImageCard'
 import TextCard from '../components/cards/TextCard'
 import { useNavigate } from 'react-router-dom'
 import { DownloadIcon } from '@chakra-ui/icons'
+import { getData } from '../apis/GetData'
 
 export default function Result() {
 
     const navigate = useNavigate();
+
+    const handleDownload = async () => {
+        const data = await getData();
+        console.log(data);
+    }
 
     return (
         <div>
@@ -25,7 +31,7 @@ export default function Result() {
                     <Button onClick={() => navigate('/')}>
                         <Text>Back</Text>
                     </Button>
-                    <Button onClick={() => navigate('/')}>
+                    <Button onClick={() => handleDownload()}>
                         <Icon>
                             <DownloadIcon />
                         </Icon>
