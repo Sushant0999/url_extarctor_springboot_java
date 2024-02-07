@@ -50,7 +50,6 @@ export default function SearchBox() {
             let response;
             try {
                 response = await addLinks(inputText, enable);
-                console.log('from searchbox ', response === undefined);
                 if (response.status === 200) {
                     navigate('/result');
                     message = 'Success';
@@ -69,30 +68,6 @@ export default function SearchBox() {
                     createToast();
                 }
             }
-
-            // switch (response.status) {
-            //     case 200:
-            //         navigate('/result');
-            //         message = 'Success';
-            //         status = 'success';
-            //         createToast();
-            //         break;
-            //     case 204:
-            //         message = 'Invalid Url or Resource Down Try Enable/Disable JavaScript';
-            //         status = 'info';
-            //         createToast();
-            //         break;
-            //     case undefined:
-            //         message = 'Server Error';
-            //         status = 'error';
-            //         createToast();
-            //         break;
-            //     default:
-            //         message = 'Try Again After Sometimes';
-            //         status = 'info';
-            //         createToast();
-            //         break;
-            // }
         }
         else {
             setTimeout(() => {

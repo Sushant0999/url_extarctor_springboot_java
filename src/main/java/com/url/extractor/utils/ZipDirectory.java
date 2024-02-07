@@ -1,20 +1,33 @@
 package com.url.extractor.utils;
 
+import com.url.extractor.model.UrlData;
 import com.url.extractor.service.UrlDataService;
 
+import java.io.IOException;
 import java.io.File;
+import java.io.PrintWriter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Arrays;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class ZipDirectory {
+
     public static void zip() throws IOException {
+        //Getting directory information
         String filePath = System.getProperty("user.dir");
         File directoryPath = new File(filePath + "\\data\\temp\\");
         String sourceFile = UrlDataService.pageName;
+        //Getting links to a List
+        List<String> links = UrlDataService.data.stream()
+                .map(UrlData::getAnchorTags)
+                .flatMap(List::stream)
+                .distinct()
+                .toList();
+        //Adding this links to a text file
+        writeLinks(links, sourceFile);
+
         FileOutputStream fos = new FileOutputStream(directoryPath + ".zip");
         ZipOutputStream zipOut = new ZipOutputStream(fos);
 
@@ -51,5 +64,22 @@ public class ZipDirectory {
             zipOut.write(bytes, 0, length);
         }
         fis.close();
+    }
+
+    public static void writeLinks(List<String> list, String dir){
+        dir = dir.replace("\\", "\\\\");
+        String dirName = dir.split("\\\\")[14];
+        try {
+            String filePath = System.getProperty("user.dir");
+            File directoryPath = new File(filePath + "\\data\\temp\\" + dirName + "\\temp.txt");
+            PrintWriter pw = new PrintWriter(directoryPath);
+            for (String link : list) {
+                pw.write(link + "\n");
+            }
+            pw.close();
+            System.out.println("LINKS ADDED TO FILE");
+        }catch (IOException e){
+            e.printStackTrace();
+        }
     }
 }
