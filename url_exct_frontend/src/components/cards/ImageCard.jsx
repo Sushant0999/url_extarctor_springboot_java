@@ -39,7 +39,7 @@ export default function ImageCard() {
                 // backgroundImage: `url(${image})`,
                 backgroundSize: 'cover',
                 backgroundRepeat: 'no-repeat',
-                // filter: 'blur(2px)',
+    
             }}>
                 <CardBody >
                     <Text fontSize={'30px'}>Images</Text>
