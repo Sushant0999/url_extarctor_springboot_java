@@ -67,7 +67,7 @@ public class ZipDirectory {
     }
 
     public static void writeLinks(List<String> list, String dir){
-        //Replacing \ with \\
+        //Replacing '\' with '\\'
         dir = dir.replace("\\", "\\\\");
         //Extracting folder name
         String dirName = dir.split("\\\\")[14];
@@ -80,10 +80,11 @@ public class ZipDirectory {
                 //Writing link on text file
                 pw.write(link + "\n");
             }
+            //PrintWriter Closed
             pw.close();
-            System.out.println("LINKS ADDED TO FILE");
+            MyLogger.info("LINKS ADDED TO FILE");
         }catch (IOException e){
-            e.printStackTrace();
+            MyLogger.err(e.getMessage());
         }
     }
 }

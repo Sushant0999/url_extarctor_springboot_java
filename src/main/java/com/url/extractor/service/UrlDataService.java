@@ -41,9 +41,9 @@ public class UrlDataService {
             String filePath = System.getProperty("user.dir");
             FileUtils.deleteDirectory(new File(filePath + "\\data\\temp"));
             FileUtils.deleteQuietly(new File(filePath + "\\data\\" + "temp.zip"));
-            System.out.println("DIRECTORY REMOVED");
+            MyLogger.info("REMOVED OLD FILES");
         } catch (Exception e) {
-            System.out.println("NO DIRECTORY TO REMOVE");
+            MyLogger.info("NO DIRECTORY TO REMOVE");
         }
 
         try (WebClient webClient = new WebClient()) {
@@ -65,14 +65,15 @@ public class UrlDataService {
             File file = new File(pageName);
             page.getPage().save(file);
             //GETTING BASE URL
-//            System.out.println(page.getBaseURL());
+//            page.getBaseURL();
+//            System.out.println(page.getBody());
             // Extract multiple elements and iterate over them
             List<String> tags = new ArrayList<>();
             for (HtmlAnchor link : page.getAnchors()) {
-                String linkText = link.toString();
                 String linkUrl = link.getHrefAttribute();
-                String temp = linkUrl.replaceAll("//", "");
-                tags.add(temp);
+                if(linkUrl.contains("https")){
+                    tags.add(linkUrl);
+                }
             }
             urlData = new UrlData();
             urlData.setTopics(page.getTitleText().toLowerCase());
@@ -85,8 +86,7 @@ public class UrlDataService {
             data.add(urlData);
 
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println(e.getMessage());
+            MyLogger.err(e.getMessage());
         }
         return urlData;
     }
@@ -153,7 +153,7 @@ public class UrlDataService {
 
             fileList.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            MyLogger.err(e.getMessage());
         }
         return imageList;
     }
@@ -171,7 +171,7 @@ public class UrlDataService {
                 images.add(fileContent);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            MyLogger.err(e.getMessage());
             throw new Exception("SOMETHING WENT WRONG");
         }
         return images;
@@ -184,9 +184,7 @@ public class UrlDataService {
             File directoryPath = new File(filePath + "\\data\\");
 
             Path paths = Paths.get(directoryPath.toURI()).resolve("temp.zip").normalize();
-            Resource resource = new UrlResource(paths.toUri());
-
-            return resource;
+            return new UrlResource(paths.toUri());
         } catch (IOException e) {
             MyLogger.err(e.getMessage() + "\n" + "UNABLE TO PROCESS REQUEST");
             return null;
