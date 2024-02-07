@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, SimpleGrid } from '@chakra-ui/react';
+import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, SimpleGrid, Image } from '@chakra-ui/react';
 import { getImages } from '../../apis/GetImages';
 import ImageDisplay from '../../utils/ImageDisplay';
+import image from '../../images/image.png'
+
+
 
 export default function ImageCard() {
     const [isOpen, setIsOpen] = useState(false);
@@ -30,15 +33,21 @@ export default function ImageCard() {
 
     return (
         <Box>
-            <Card sx={{ display: 'flex', textAlign: 'center' }}>
-                <CardBody>
+            <Card sx={{
+                display: 'flex',
+                textAlign: 'center',
+                // backgroundImage: `url(${image})`,
+                backgroundSize: 'cover',
+                backgroundRepeat: 'no-repeat',
+                // filter: 'blur(2px)',
+            }}>
+                <CardBody >
                     <Text fontSize={'30px'}>Images</Text>
                 </CardBody>
                 <CardFooter sx={{ display: 'flex', justifyContent: 'center' }}>
                     <Button size='sm' onClick={() => { handleOpen(); fetchData(); }}>View here</Button>
                 </CardFooter>
             </Card>
-
             <Modal isOpen={isOpen} onClose={handleClose} size={'xl'}>
                 <ModalOverlay />
                 <ModalContent>
@@ -70,7 +79,7 @@ export default function ImageCard() {
                         <Button sx={{ display: 'flex', justifyContent: 'flex-start' }} colorScheme='blue' mr={3} onClick={handleClose}>
                             Close
                         </Button>
-                        <Button variant='ghost'>Secondary Action</Button>
+                        {/* <Button variant='ghost'>Secondary Action</Button> */}
                     </ModalFooter>
                 </ModalContent>
             </Modal>

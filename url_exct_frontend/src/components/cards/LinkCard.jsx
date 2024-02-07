@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, TableContainer, Table, Thead, Tr, Th, Tbody } from '@chakra-ui/react';
 import { getLink } from '../../apis/GetLinks';
+import image from '../../images/link.png'
+
 
 export default function LinkCard() {
     const [isOpen, setIsOpen] = useState(false);
@@ -29,7 +31,14 @@ export default function LinkCard() {
 
     return (
         <Box>
-            <Card sx={{ display: 'flex', textAlign: 'center' }}>
+            <Card sx={{
+                display: 'flex',
+                textAlign: 'center',
+                // backgroundImage: `url(${image})`,
+                backgroundSize: 'cover',
+                backgroundRepeat: 'no-repeat',
+                // filter: 'blur(2px)',
+            }}>
                 <CardBody>
                     <Text fontSize={'30px'}>Links</Text>
                 </CardBody>
@@ -64,7 +73,7 @@ export default function LinkCard() {
                                             {data && data.length > 0 ? (
                                                 <>
                                                     {data.map((link) => (
-                                                        <Text href={link} key={link} id={`${link}`}>{link}</Text>
+                                                        <Text sx={{ padding: '5px' }} href={link} key={link} id={`${link}`}>{link}</Text>
                                                     ))}
                                                 </>
                                             ) : (
@@ -80,7 +89,7 @@ export default function LinkCard() {
                         <Button sx={{ display: 'flex', justifyContent: 'flex-start' }} colorScheme='blue' mr={3} onClick={handleClose}>
                             Close
                         </Button>
-                        <Button variant='ghost'>Secondary Action</Button>
+                        {/* <Button variant='ghost'>Secondary Action</Button> */}
                     </ModalFooter>
                 </ModalContent>
             </Modal>

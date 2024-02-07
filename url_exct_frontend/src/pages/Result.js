@@ -15,7 +15,7 @@ export default function Result() {
         <div>
             <Navbar />
             <Box >
-                <SimpleGrid spacing={1} templateColumns='repeat(auto-fill, minmax(200px, 1fr))' p={'20px'}
+                <SimpleGrid spacing={4} templateColumns='repeat(auto-fill, minmax(200px, 1fr))' p={'20px'}
                 >
                     <LinkCard />
                     <ImageCard />

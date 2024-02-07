@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, Box } from '@chakra-ui/react';
+import image from '../../images/text.png'
+
 
 export default function TextCard() {
     const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +16,14 @@ export default function TextCard() {
 
     return (
         <Box>
-            <Card sx={{ display: 'flex', textAlign: 'center' }}>
+            <Card sx={{
+                display: 'flex',
+                textAlign: 'center',
+                // backgroundImage: `url(${image})`,
+                backgroundSize: 'cover',
+                backgroundRepeat: 'no-repeat',
+                // filter: 'blur(1px)',
+            }}>
                 <CardBody>
                     <Text fontSize={'30px'}>Text</Text>
                 </CardBody>
@@ -34,7 +43,7 @@ export default function TextCard() {
                         <Button colorScheme='blue' mr={3} onClick={handleClose}>
                             Close
                         </Button>
-                        <Button variant='ghost'>Secondary Action</Button>
+                        {/* <Button variant='ghost'>Secondary Action</Button> */}
                     </ModalFooter>
                 </ModalContent>
             </Modal>
