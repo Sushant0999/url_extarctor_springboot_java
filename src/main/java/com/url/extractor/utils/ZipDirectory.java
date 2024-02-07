@@ -67,13 +67,17 @@ public class ZipDirectory {
     }
 
     public static void writeLinks(List<String> list, String dir){
+        //Replacing \ with \\
         dir = dir.replace("\\", "\\\\");
+        //Extracting folder name
         String dirName = dir.split("\\\\")[14];
         try {
+            //Getting directory info
             String filePath = System.getProperty("user.dir");
             File directoryPath = new File(filePath + "\\data\\temp\\" + dirName + "\\temp.txt");
             PrintWriter pw = new PrintWriter(directoryPath);
             for (String link : list) {
+                //Writing link on text file
                 pw.write(link + "\n");
             }
             pw.close();

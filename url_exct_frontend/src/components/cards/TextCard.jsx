@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, Box } from '@chakra-ui/react';
-import image from '../../images/text.png'
+// import image from '../../images/text.png'
 
 
 export default function TextCard() {

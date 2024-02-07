@@ -17,16 +17,20 @@
         <java.version>17</java.version>
     </properties>
     <dependencies>
+        <!--    FOR JSON    -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.13.0</version>
         </dependency>
+
         <dependency>
             <groupId>com.squareup.retrofit2</groupId>
             <artifactId>converter-gson</artifactId>
             <version>2.9.0</version>
         </dependency>
+
+        <!--    FOR WEB    -->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -40,15 +44,23 @@
             <scope>test</scope>
         </dependency>
 
+        <!--    FOR LOMBOK    -->
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <!--    FOR GETTING WEBSITE DATA    -->
+
         <dependency>
             <groupId>net.sourceforge.htmlunit</groupId>
             <artifactId>htmlunit</artifactId>
         </dependency>
+
+        <!--    FOR LOGGING    -->
+
 
     </dependencies>
     <build>

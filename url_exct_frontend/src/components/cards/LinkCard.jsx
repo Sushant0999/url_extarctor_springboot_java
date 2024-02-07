@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, TableContainer, Table, Thead, Tr, Th, Tbody } from '@chakra-ui/react';
 import { getLink } from '../../apis/GetLinks';
-import image from '../../images/link.png'
+// import image from '../../images/link.png'
 
 
 export default function LinkCard() {
@@ -73,7 +73,9 @@ export default function LinkCard() {
                                             {data && data.length > 0 ? (
                                                 <>
                                                     {data.map((link) => (
+
                                                         <Text sx={{ padding: '5px' }} href={link} key={link} id={`${link}`}>{link}</Text>
+
                                                     ))}
                                                 </>
                                             ) : (

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, SimpleGrid, Image } from '@chakra-ui/react';
+import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, SimpleGrid } from '@chakra-ui/react';
 import { getImages } from '../../apis/GetImages';
 import ImageDisplay from '../../utils/ImageDisplay';
-import image from '../../images/image.png'
+// import image from '../../images/image.png'
 
 
 

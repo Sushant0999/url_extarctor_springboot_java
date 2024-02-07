@@ -4,6 +4,7 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.url.extractor.model.UrlData;
+import com.url.extractor.utils.MyLogger;
 import com.url.extractor.utils.ZipDirectory;
 import org.apache.commons.io.FileUtils;
 import org.springframework.core.io.Resource;
@@ -109,13 +110,10 @@ public class UrlDataService {
                 data = print(url, jsEnable);
             }
         } catch (Exception e) {
+            MyLogger.err(e.getMessage());
             throw new Exception("SOMETHING WENT WRONG");
         }
-        if (data == null) {
-            return null;
-        } else {
-            return data;
-        }
+        return data;
     }
 
     //GET ALL ANCHOR TAGS
@@ -128,10 +126,10 @@ public class UrlDataService {
     }
 
     public boolean searchString(String s) {
-        System.out.println(data.stream()
-                .anyMatch(urlData -> urlData.getKeyword()
-                        .stream()
-                        .anyMatch(keyword -> keyword.equalsIgnoreCase(s))));
+//        System.out.println(data.stream()
+//                .anyMatch(urlData -> urlData.getKeyword()
+//                        .stream()
+//                        .anyMatch(keyword -> keyword.equalsIgnoreCase(s))));
         return data.stream()
                 .anyMatch(urlData -> urlData.getKeyword()
                         .stream()
@@ -190,6 +188,7 @@ public class UrlDataService {
 
             return resource;
         } catch (IOException e) {
+            MyLogger.err(e.getMessage() + "\n" + "UNABLE TO PROCESS REQUEST");
             return null;
         }
     }

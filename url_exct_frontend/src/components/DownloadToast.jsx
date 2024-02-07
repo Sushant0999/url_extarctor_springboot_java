@@ -32,13 +32,11 @@ const DownloadFileComponent = () => {
                 isClosable: true,
             });
 
-            console.log(data);
         } catch (error) {
             // Hide loading toast
             if (loadingToastId) {
                 toast.close(loadingToastId);
             }
-
             // Show error toast
             toast({
                 title: "Error downloading data",

@@ -1,6 +1,7 @@
 package com.url.extractor.controller;
 
 
+import com.url.extractor.utils.MyLogger;
 import com.url.extractor.utils.ZipDirectory;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -36,7 +37,7 @@ public class UrlDataController {
 
     @PostMapping("/insert")
     public ResponseEntity<?> insertBulk(@RequestBody List<String> urls, @RequestParam("jsEnable") Boolean jsEnable) {
-        System.out.println("URL INSERTED " + urls.get(0));
+        MyLogger.info("LINK ADDED " + urls.get(0) + " AND JS ENABLE " + jsEnable);
         UrlData data = null;
         try {
             data = urlDataService.getData(urls, jsEnable);
@@ -51,25 +52,29 @@ public class UrlDataController {
 
     @GetMapping("/getTags")
     public ResponseEntity<?> getAllTags() {
+        MyLogger.info("TAGS REQUESTED");
         List<String> list = urlDataService.getAllTags();
         return ResponseEntity.ok().body(list);
     }
 
     @GetMapping("/search/{keyword}")
     public ResponseEntity<?> search(@PathVariable String keyword) {
+        MyLogger.info("KEYWORD SEARCH REQUESTED");
         return ResponseEntity.ok().body(urlDataService.searchString(keyword));
     }
 
     @GetMapping("/getImages")
     public ResponseEntity<?> getImages() throws Exception {
+        MyLogger.info("GET IMAGES REQUESTED");
         return ResponseEntity.of(Optional.ofNullable(urlDataService.images()));
     }
 
     @GetMapping("/getData")
     public ResponseEntity<?> getData() throws IOException {
-        System.out.println("CALLED");
+        MyLogger.info("GET ZIP FILE REQUESTED");
         Resource file = urlDataService.sendZip();
         if (file == null) {
+            MyLogger.warn("REQUEST NOT COMPLETED");
             return ResponseEntity.status(500).build();
         }
         HttpHeaders headers = new HttpHeaders();

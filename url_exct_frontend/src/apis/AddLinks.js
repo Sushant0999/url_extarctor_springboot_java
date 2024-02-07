@@ -5,8 +5,6 @@ export const addLinks = async (link, enable) => {
     const baseUrl = process.env.REACT_APP_BASE_URL;
     const url = `${baseUrl}/urlData/insert`;
 
-    console.log(url);
-
     const list = []
     list.push(link)
 
