@@ -2,8 +2,9 @@ import axios from 'axios';
 
 export const addLinks = async (link, enable) => {
 
-    const baseUrl = process.env.REACT_APP_BASE_URL;
-    const url = `${baseUrl}/urlData/insert`;
+    // const baseUrl = process.env.REACT_APP_BASE_URL;
+    // const url = `${baseUrl}/urlData/insert`;c
+    const url = "http://localhost:8080/urlData/insert";
 
     const list = []
     list.push(link)
