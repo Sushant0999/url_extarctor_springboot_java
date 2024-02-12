@@ -4,8 +4,7 @@ FROM maven:latest as spring-build
 WORKDIR /app
 
 COPY pom.xml .
-
-COPY . .
+COPY src ./src
 
 RUN mvn clean package
 
@@ -14,7 +13,7 @@ FROM openjdk:17-jre-slim as spring-runtime
 
 WORKDIR /app
 
-COPY --from=spring-build /app/target/app.jar app.jar
+COPY --from=spring-build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
@@ -26,11 +25,9 @@ FROM node:14.17 as react-build
 WORKDIR /app
 
 COPY url_exct_frontend/package*.json ./
-
 RUN npm install
 
 COPY url_exct_frontend/ ./
-
 RUN npm run build
 
 # STAGE 4: Run Nginx server to serve React application
