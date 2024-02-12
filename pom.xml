@@ -59,8 +59,12 @@
             <artifactId>htmlunit</artifactId>
         </dependency>
 
-        <!--    FOR LOGGING    -->
-
+        <!--    ACTUATOR    -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+            <version>3.2.1</version>
+        </dependency>
 
     </dependencies>
     <build>

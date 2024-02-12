@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RateLimitInterceptor implements HandlerInterceptor {
 
     private final Map<String, Long> requestCounts = new ConcurrentHashMap<>();
-    private final long REQUEST_LIMIT = 1; // Max requests allowed in a minute
+    private final long REQUEST_LIMIT = 10; // Max requests allowed in a minute
 
     @Override
     public boolean preHandle(HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) throws Exception {
