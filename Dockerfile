@@ -91,6 +91,7 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 
+# Copy build files to nginx directory
 COPY /url_exct_frontend/build /usr/share/nginx/html
 
 # Build the Java Spring Boot application
@@ -102,10 +103,8 @@ COPY target/*.jar app.jar
 RUN chmod +X app.jar
 
 # Expose ports
-EXPOSE 8081 80
+EXPOSE 80
 
-# Running jar file
-CMD ["java", "-jar", "app.jar"]
+# Start both the Java application and Nginx server
+CMD ["sh", "-c", "java -jar app.jar & nginx -g 'daemon off;'"]
 
-# Start Nginx server
-#CMD ["nginx", "-g", "daemon off;"]
