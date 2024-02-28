@@ -28,7 +28,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/urlData")
-@CrossOrigin(origins = "*", allowedHeaders = "*")
+@CrossOrigin(origins = "*", allowedHeaders = "*", maxAge = 3600L, methods = {RequestMethod.GET, RequestMethod.OPTIONS, RequestMethod.POST})
 public class UrlDataController {
 
     @Autowired
@@ -84,5 +84,6 @@ public class UrlDataController {
                 .headers(headers)
                 .body(file);
     }
+
 
 }

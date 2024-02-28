@@ -5,12 +5,13 @@ export const getLink = async () => {
     const baseUrl = process.env.REACT_APP_BASE_URL;
     const url = `${baseUrl}/urlData/getTags`;
 
+
     try {
         const response = await axios.get(url, {
             headers: {
-                'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json',
             },
+            mode: 'no-cors'
         });
         const data = response.data;
         return data;

@@ -2,8 +2,9 @@ import axios from 'axios';
 
 export const addLinks = async (link, enable) => {
 
-    const baseUrl = process.env.REACT_APP_BASE_URL;
-    const url = `${baseUrl}/urlData/insert`;
+     const baseUrl = process.env.REACT_APP_BASE_URL;
+     const url = `${baseUrl}/urlData/insert`;
+
     const list = []
     list.push(link)
 
@@ -14,9 +15,11 @@ export const addLinks = async (link, enable) => {
             headers: {
                 'Content-Type': 'application/json',
             },
+            mode: 'cors',
             params: {
                 'jsEnable': enable
-            }
+            },
+            date: list
         });
         // return response;
 
