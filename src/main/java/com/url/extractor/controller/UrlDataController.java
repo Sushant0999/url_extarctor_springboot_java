@@ -4,8 +4,7 @@ package com.url.extractor.controller;
 import com.url.extractor.utils.MyLogger;
 import com.url.extractor.utils.ZipDirectory;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.ui.Model;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -14,8 +13,6 @@ import com.google.gson.JsonObject;
 import com.url.extractor.model.UrlData;
 import com.url.extractor.service.UrlDataService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -85,5 +82,12 @@ public class UrlDataController {
                 .body(file);
     }
 
-
+    @GetMapping("/getText")
+    public ResponseEntity<?> getAllText(){
+        List<String> stringList = urlDataService.textListStrings();
+        if(stringList.isEmpty()){
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }
+        return ResponseEntity.ok().body(urlDataService.textListStrings());
+    }
 }

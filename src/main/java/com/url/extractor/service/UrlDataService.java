@@ -190,4 +190,11 @@ public class UrlDataService {
             return null;
         }
     }
+
+
+    public List<String> textListStrings(){
+        return data.stream()
+                .map(item -> item.getId() + " " + item.getKeyword() + " " + item.getCategory() + " " + item.getTopics())
+                .collect(Collectors.toList());
+    }
 }
