@@ -17,7 +17,7 @@ public class ZipDirectory {
     public static void zip() throws IOException {
         //Getting directory information
         String filePath = System.getProperty("user.dir");
-        File directoryPath = new File(filePath + "\\data\\temp\\");
+        File directoryPath = new File(System.getProperty("os.name").contains("Windows") ? filePath + "\\data\\temp\\" : filePath + "//data//temp//");
         String sourceFile = UrlDataService.pageName;
         //Getting links to a List
         List<String> links = UrlDataService.data.stream()
@@ -66,15 +66,16 @@ public class ZipDirectory {
         fis.close();
     }
 
-    public static void writeLinks(List<String> list, String dir){
+    public static void writeLinks(List<String> list, String dir) {
         //Replacing '\' with '\\'
-        dir = dir.replace("\\", "\\\\");
+
+        dir = System.getProperty("os.name").contains("Windows") ? dir.replace("\\", "\\\\") : dir.replace("/", "//");
         //Extracting folder name
-        String dirName = dir.split("\\\\")[14];
+        String dirName = System.getProperty("os.name").contains("Windows") ? dir.split("\\\\")[14] : dir.split("//")[14];
         try {
             //Getting directory info
             String filePath = System.getProperty("user.dir");
-            File directoryPath = new File(filePath + "\\data\\temp\\" + dirName + "\\temp.txt");
+            File directoryPath = new File(System.getProperty("os.name").contains("Windows") ? filePath + "\\data\\temp\\" + dirName + "\\temp.txt" : filePath + "//data//temp//" + dirName + "/temp.txt");
             PrintWriter pw = new PrintWriter(directoryPath);
             for (String link : list) {
                 //Writing link on text file
@@ -83,7 +84,7 @@ public class ZipDirectory {
             //PrintWriter Closed
             pw.close();
             MyLogger.info("LINKS ADDED TO FILE");
-        }catch (IOException e){
+        } catch (IOException e) {
             MyLogger.err(e.getMessage());
         }
     }

@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, TableContainer, Table, Thead, Tr, Th, Tbody } from '@chakra-ui/react';
+import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, TableContainer, Table, Thead, Tr, Th, Tbody, Td } from '@chakra-ui/react';
 import { getLink } from '../../apis/GetLinks';
+import { Link } from "@chakra-ui/react";
+import { ExternalLinkIcon } from "@chakra-ui/icons";
+
 // import image from '../../images/link.png'
 
 
@@ -56,10 +59,12 @@ export default function LinkCard() {
                         <Box sx={{ maxH: '400px', overflowY: 'scroll' }}>
                             {loading ? (
                                 <Stack>
-                                    <Skeleton height='20px' />
-                                    <Skeleton height='20px' />
-                                    <Skeleton height='20px' />
-                                    <Skeleton height='20px' />
+                                    <Skeleton height='40px' />
+                                    <Skeleton height='40px' />
+                                    <Skeleton height='40px' />
+                                    <Skeleton height='40px' />
+                                    <Skeleton height='40px' />
+                                    <Skeleton height='40px' />
                                 </Stack>
                             ) : (
                                 <TableContainer>
@@ -73,13 +78,17 @@ export default function LinkCard() {
                                             {data && data.length > 0 ? (
                                                 <>
                                                     {data.map((link) => (
-
-                                                        <Text sx={{ padding: '5px' }} href={link} key={link} id={`${link}`}>{link}</Text>
-
+                                                        <Tr key={link}>
+                                                            <Td>
+                                                                <Link href={`${link}`} isExternal>
+                                                                    {link} <ExternalLinkIcon mx='2px' />
+                                                                </Link>
+                                                            </Td>
+                                                        </Tr>
                                                     ))}
                                                 </>
                                             ) : (
-                                                <></>
+                                                <><Text sx={{padding: '10px', textAlign: 'center'}}>NO LINKS AVIALBLE</Text></>
                                             )}
                                         </Tbody>
                                     </Table>

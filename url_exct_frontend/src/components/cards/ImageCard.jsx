@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, SimpleGrid } from '@chakra-ui/react';
+import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, SimpleGrid, Tr, Td } from '@chakra-ui/react';
 import { getImages } from '../../apis/GetImages';
 import ImageDisplay from '../../utils/ImageDisplay';
 // import image from '../../images/image.png'
@@ -39,7 +39,7 @@ export default function ImageCard() {
                 // backgroundImage: `url(${image})`,
                 backgroundSize: 'cover',
                 backgroundRepeat: 'no-repeat',
-    
+
             }}>
                 <CardBody >
                     <Text fontSize={'30px'}>Images</Text>
@@ -65,11 +65,15 @@ export default function ImageCard() {
                                     {data && data.length > 0 ? (
                                         <>
                                             {data.map((link, key) => (
-                                                <ImageDisplay imageData={link} key={key} />
+                                                    <ImageDisplay imageData={link} key={key} />
                                             ))}
                                         </>
                                     ) : (
-                                        <></>
+                                        <>
+                                            <Text sx={{ padding: '10px', fontsize: '50px', textAlign: 'center' }}>
+                                                NO IMAGES AVIALBLE
+                                            </Text>
+                                        </>
                                     )}
                                 </SimpleGrid>
                             )}

@@ -12,6 +12,7 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,16 +37,35 @@ public class UrlDataService {
     public static UrlData print(String url, boolean jsEnable) throws IOException {
         UrlData urlData = null;
         data = new ArrayList<>();
-
+        String filePath = null;
         try {
-            String filePath = System.getProperty("user.dir");
-            FileUtils.deleteDirectory(new File(filePath + "\\data\\temp"));
-            FileUtils.deleteQuietly(new File(filePath + "\\data\\" + "temp.zip"));
+            if(System.getProperty("os.name").contains("Windows")){
+                filePath = System.getProperty("user.dir");
+                FileUtils.deleteDirectory(new File(filePath + "\\data\\temp"));
+                FileUtils.deleteQuietly(new File(filePath + "\\data\\" + "temp.zip"));
+            }
+            else{
+                filePath = System.getProperty("user.dir");
+                File file = new File(filePath + "/data/temp/text.txt");
+                try {
+                    if (!file.exists()) {
+                        file.getParentFile().mkdirs(); // Create parent directories if they don't exist
+                        file.createNewFile(); // Create the file
+                    }
+                    FileWriter fileWriter = new FileWriter(file);
+                    fileWriter.write("Hello, FileWriter!");
+                    fileWriter.close();
+                    System.out.println("Data written to file successfully.");
+                    FileUtils.deleteDirectory(new File(filePath + "/data/temp"));
+                    FileUtils.deleteQuietly(new File(filePath + "/data/" + "temp.zip"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
             MyLogger.info("REMOVED OLD FILES");
         } catch (Exception e) {
             MyLogger.info("NO DIRECTORY TO REMOVE");
         }
-
         try (WebClient webClient = new WebClient()) {
             // Disable JavaScript (optional)
             webClient.getOptions().setJavaScriptEnabled(!jsEnable);
@@ -60,10 +80,15 @@ public class UrlDataService {
 //            System.out.println("PAGE : "+page.getForms());
             //DUMPING WEBSITE DATA
             //System.getProperties().getProperty("java.class.path").split(";")[0]  + "\\data\\"
-            String filePath = System.getProperty("user.dir");
-            pageName = filePath + "\\data\\temp\\" + System.currentTimeMillis();
-            File file = new File(pageName);
-            page.getPage().save(file);
+            if(System.getProperty("os.name").contains("Windows")){
+                pageName = filePath + "\\data\\temp\\" + System.currentTimeMillis();
+                File file = new File(pageName);
+                page.getPage().save(file);
+            }else{
+                pageName = filePath + "/data/temp/" + System.currentTimeMillis();
+                File file = new File(pageName);
+                page.getPage().save(file);
+            }
             //GETTING BASE URL
 //            page.getBaseURL();
 //            System.out.println(page.getBody());
@@ -139,10 +164,10 @@ public class UrlDataService {
     public List<String> getImages() throws IOException {
         imageList = new ArrayList<>();
         String filePath = System.getProperty("user.dir");
-        File directoryPath = new File(filePath + "\\data\\temp\\");
+        File directoryPath = new File(System.getProperty("os.name").contains("Windows") ? filePath + "\\data\\temp\\" : filePath + "//data//temp//");
         String dirPath = Arrays.toString(directoryPath.list());
         try {
-            Stream<Path> fileList = Files.walk(Paths.get(filePath + "\\data\\temp\\" + dirPath.split(",")[0].substring(1)));
+            Stream<Path> fileList = Files.walk(Paths.get( System.getProperty("os.name").contains("Windows") ? filePath + "\\data\\temp\\" : filePath + "//data//temp//" + dirPath.split(",")[0].substring(1)));
 
             fileList.forEach(path -> {
                 Optional<Boolean> isImage = getExtensionByStringHandling(path.toString());
@@ -181,7 +206,7 @@ public class UrlDataService {
         try {
             ZipDirectory.zip();
             String filePath = System.getProperty("user.dir");
-            File directoryPath = new File(filePath + "\\data\\");
+            File directoryPath = new File(System.getProperty("os.name").contains("Windows") ? filePath + "\\data\\" : filePath + "//data//");
 
             Path paths = Paths.get(directoryPath.toURI()).resolve("temp.zip").normalize();
             return new UrlResource(paths.toUri());
