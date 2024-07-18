@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -71,7 +72,16 @@ public class ZipDirectory {
 
         dir = System.getProperty("os.name").contains("Windows") ? dir.replace("\\", "\\\\") : dir.replace("/", "//");
         //Extracting folder name
-        String dirName = System.getProperty("os.name").contains("Windows") ? dir.split("\\\\")[14] : dir.split("//")[14];
+        System.out.println(Arrays.toString(dir.split("//")));
+        String dirName = "";
+        if(System.getProperty("os.name").contains("Windows")){
+            String[] arr = dir.split("\\\\");
+            dirName = arr[arr.length - 1];
+        }else{
+            String[] arr = dir.split("//");
+            dirName = arr[arr.length - 1];
+        }
+
         try {
             //Getting directory info
             String filePath = System.getProperty("user.dir");
