@@ -9,6 +9,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    environment: production
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -35,7 +37,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/urlExct:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/urlx_app:latest
 
       - name: Logout from Docker Hub
         run: docker logout
