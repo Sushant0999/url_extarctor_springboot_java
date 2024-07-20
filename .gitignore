@@ -23,7 +23,7 @@ url_exct_frontend/node_modules
 ./frontend/url_exct_frontend/coverage
 
 # production
-./frontend/url_exct_frontend/build
+#./frontend/url_exct_frontend/build
 
 # misc
 ./frontend/url_exct_frontend/.DS_Store
