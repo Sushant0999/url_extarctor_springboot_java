@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    depends_on:
+      - nginx
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8282:80"
+    volumes:
+      - ./url_exct_frontend/build:/usr/share/nginx/html
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
