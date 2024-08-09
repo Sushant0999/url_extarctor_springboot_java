@@ -11,7 +11,20 @@ COPY ../src ./src
 # Build the project
 RUN mvn clean package
 
-# Stage 2: Setup Nginx and Node.js
+# Stage 2: Build the React application
+FROM node:18 as react-builder
+
+# Set the working directory for the React build
+WORKDIR /react-app
+
+# Copy the React project files
+COPY ../url_exct_frontend/package*.json ./
+RUN npm install
+
+COPY ../url_exct_frontend/ ./
+RUN npm run build
+
+# Stage 3: Setup Nginx and the Spring Boot application
 FROM nginx:alpine
 
 # Update package repository and install required packages
@@ -21,10 +34,10 @@ RUN apk update && \
 # Set the working directory for the application
 WORKDIR /app
 
-# Copy build files to nginx directory
-COPY /url_exct_frontend/build /usr/share/nginx/html
+# Copy the build files from React build stage
+COPY --from=react-builder /react-app/build /usr/share/nginx/html
 
-# Copy the JAR file from the builder stage
+# Copy the JAR file from the Spring Boot builder stage
 COPY --from=builder /build/target/*.jar app.jar
 
 # Allow executable permissions to the JAR file

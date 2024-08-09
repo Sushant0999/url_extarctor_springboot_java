@@ -15,7 +15,7 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "8282:80"
+      - "8080:80"
     volumes:
       - ./url_exct_frontend/build:/usr/share/nginx/html
     networks:
