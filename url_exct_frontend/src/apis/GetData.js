@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 export const getData = async () => {
-    const baseUrl = process.env.REACT_APP_BASE_URL;
-    const url = `${baseUrl}/urlData/getData`;
+    const baseUrl = import.meta.env.VITE_BASE_URL;
+    const url = `${baseUrl}/urlData/download`;
 
     try {
         const response = await axios.get(url, {

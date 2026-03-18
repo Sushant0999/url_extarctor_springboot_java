@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
-import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, TableContainer, Table, Thead, Tr, Th, Tbody, Td } from '@chakra-ui/react';
+import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, TableContainer, Table, Thead, Tr, Th, Tbody, Td, Icon, VStack, Badge, HStack, Link } from '@chakra-ui/react';
 import { getLink } from '../../apis/GetLinks';
-import { Link } from "@chakra-ui/react";
-import { ExternalLinkIcon } from "@chakra-ui/icons";
-
-// import image from '../../images/link.png'
-
+import { BiLink, BiLinkExternal } from 'react-icons/bi';
 
 export default function LinkCard() {
     const [isOpen, setIsOpen] = useState(false);
@@ -14,6 +10,7 @@ export default function LinkCard() {
 
     const handleOpen = () => {
         setIsOpen(true);
+        fetchData();
     };
 
     const handleClose = () => {
@@ -34,73 +31,102 @@ export default function LinkCard() {
 
     return (
         <Box>
-            <Card sx={{
-                display: 'flex',
-                textAlign: 'center',
-                // backgroundImage: `url(${image})`,
-                backgroundSize: 'cover',
-                backgroundRepeat: 'no-repeat',
-                // filter: 'blur(2px)',
-            }}>
-                <CardBody>
-                    <Text fontSize={'30px'}>Links</Text>
+            <Card 
+                className="glass-effect"
+                overflow="hidden"
+                borderRadius="2xl"
+                height="100%"
+                border="1px solid rgba(255,255,255,0.05)"
+                _hover={{ borderColor: 'purple.400' }}
+                transition="all 0.3s"
+            >
+                <CardBody p={8}>
+                    <VStack align="start" spacing={4}>
+                        <Box bg="purple.500" p={3} borderRadius="xl">
+                            <Icon as={BiLink} color="white" boxSize={6} />
+                        </Box>
+                        <Box>
+                            <VStack align="start" spacing={0}>
+                                <Text fontSize="2xl" fontWeight="bold" color="white">Links</Text>
+                                <Badge colorScheme="purple" borderRadius="md" variant="subtle">NAVIGATION</Badge>
+                            </VStack>
+                        </Box>
+                        <Text color="gray.400" fontSize="sm">
+                            Discover all internal and external hyperlinks found across the document.
+                        </Text>
+                    </VStack>
                 </CardBody>
-                <CardFooter sx={{ display: 'flex', justifyContent: 'center' }}>
-                    <Button size='sm' onClick={() => { handleOpen(); fetchData(); }}>View here</Button>
+                <CardFooter bg="rgba(255,255,255,0.02)" borderTop="1px solid rgba(255,255,255,0.05)">
+                    <Button 
+                        width="100%" 
+                        colorScheme="purple" 
+                        variant="ghost"
+                        onClick={handleOpen}
+                    >
+                        Explore Links
+                    </Button>
                 </CardFooter>
             </Card>
 
-            <Modal isOpen={isOpen} onClose={handleClose} size={'xl'}>
-                <ModalOverlay />
-                <ModalContent>
-                    <ModalHeader sx={{ textAlign: 'center' }}>Modal Title</ModalHeader>
+            <Modal isOpen={isOpen} onClose={handleClose} size="3xl" scrollBehavior="inside">
+                <ModalOverlay backdropFilter="blur(10px)" bg="blackAlpha.700" />
+                <ModalContent 
+                    className="glass-effect" 
+                    bg="rgba(15, 23, 42, 0.95)" 
+                    borderRadius="3xl"
+                    border="1px solid rgba(255,255,255,0.1)"
+                    color="white"
+                >
+                    <ModalHeader borderBottom="1px solid rgba(255,255,255,0.05)">
+                        <HStack>
+                            <Icon as={BiLink} color="purple.400" />
+                            <Text>Discovered Links</Text>
+                        </HStack>
+                    </ModalHeader>
                     <ModalCloseButton />
-                    <ModalBody>
-                        <Box sx={{ maxH: '400px', overflowY: 'scroll' }}>
-                            {loading ? (
-                                <Stack>
-                                    <Skeleton height='40px' />
-                                    <Skeleton height='40px' />
-                                    <Skeleton height='40px' />
-                                    <Skeleton height='40px' />
-                                    <Skeleton height='40px' />
-                                    <Skeleton height='40px' />
-                                </Stack>
-                            ) : (
-                                <TableContainer>
-                                    <Table variant='simple'>
-                                        <Thead>
-                                            <Tr>
-                                                <Th>Links</Th>
+                    <ModalBody py={6}>
+                        {loading ? (
+                            <Stack spacing={4}>
+                                {[1, 2, 3, 4, 5].map(i => (
+                                    <Skeleton key={i} height="50px" borderRadius="lg" />
+                                ))}
+                            </Stack>
+                        ) : data && data.length > 0 ? (
+                            <TableContainer>
+                                <Table variant="simple">
+                                    <Tbody>
+                                        {data.map((link, idx) => (
+                                            <Tr key={idx} _hover={{ bg: "rgba(255,255,255,0.02)" }}>
+                                                <Td borderBottom="1px solid rgba(255,255,255,0.05)">
+                                                    <HStack justifyContent="space-between">
+                                                        <Link 
+                                                            href={link} 
+                                                            isExternal 
+                                                            color="blue.300" 
+                                                            fontSize="sm" 
+                                                            maxW="500px" 
+                                                            isTruncated
+                                                        >
+                                                            {link}
+                                                        </Link>
+                                                        <Icon as={BiLinkExternal} color="gray.500" />
+                                                    </HStack>
+                                                </Td>
                                             </Tr>
-                                        </Thead>
-                                        <Tbody>
-                                            {data && data.length > 0 ? (
-                                                <>
-                                                    {data.map((link) => (
-                                                        <Tr key={link}>
-                                                            <Td>
-                                                                <Link href={`${link}`} isExternal>
-                                                                    {link} <ExternalLinkIcon mx='2px' />
-                                                                </Link>
-                                                            </Td>
-                                                        </Tr>
-                                                    ))}
-                                                </>
-                                            ) : (
-                                                <><Text sx={{padding: '10px', textAlign: 'center'}}>NO LINKS AVIALBLE</Text></>
-                                            )}
-                                        </Tbody>
-                                    </Table>
-                                </TableContainer>
-                            )}
-                        </Box>
+                                        ))}
+                                    </Tbody>
+                                </Table>
+                            </TableContainer>
+                        ) : (
+                            <VStack p={10}>
+                                <Text color="gray.400">No links discovered on this page.</Text>
+                            </VStack>
+                        )}
                     </ModalBody>
-                    <ModalFooter>
-                        <Button sx={{ display: 'flex', justifyContent: 'flex-start' }} colorScheme='blue' mr={3} onClick={handleClose}>
-                            Close
+                    <ModalFooter borderTop="1px solid rgba(255,255,255,0.05)">
+                        <Button colorScheme="purple" onClick={handleClose} borderRadius="full">
+                            Dismiss
                         </Button>
-                        {/* <Button variant='ghost'>Secondary Action</Button> */}
                     </ModalFooter>
                 </ModalContent>
             </Modal>

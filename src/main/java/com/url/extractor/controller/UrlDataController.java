@@ -1,27 +1,24 @@
 package com.url.extractor.controller;
 
-
+import com.url.extractor.dto.ExtractedData;
+import com.url.extractor.service.StrategySelector;
+import com.url.extractor.service.MediaService;
+import com.url.extractor.service.ExtractionStore;
+import com.url.extractor.service.StorageService;
+import com.url.extractor.service.ZipService;
 import com.url.extractor.utils.MyLogger;
-import com.url.extractor.utils.ZipDirectory;
-import org.springframework.core.io.Resource;
-import org.springframework.http.*;
-import org.springframework.ui.Model;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.url.extractor.model.UrlData;
-import com.url.extractor.service.UrlDataService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/urlData")
@@ -29,65 +26,141 @@ import java.util.Optional;
 public class UrlDataController {
 
     @Autowired
-    private UrlDataService urlDataService;
+    private StrategySelector strategySelector;
 
+    @Autowired
+    private ExtractionStore extractionStore;
 
-    @PostMapping("/insert")
-    public ResponseEntity<?> insertBulk(@RequestBody List<String> urls, @RequestParam("jsEnable") Boolean jsEnable) {
-        MyLogger.info("LINK ADDED " + urls.get(0) + " AND JS ENABLE " + jsEnable);
-        UrlData data = null;
+    @Autowired
+    private StorageService storageService;
+
+    @Autowired
+    private ZipService zipService;
+
+    @Autowired
+    private AnalysisService analysisService;
+
+    @Autowired
+    private JsoupStrategy jsoupStrategy;
+
+    @PostMapping("/extract")
+    public ResponseEntity<?> extract(@RequestBody List<String> urls) {
+        if (urls == null || urls.isEmpty()) {
+            return ResponseEntity.badRequest().body("No URLs provided");
+        }
+        
+        String url = urls.get(0);
+        MyLogger.info("Extraction requested for: " + url);
         try {
-            data = urlDataService.getData(urls, jsEnable);
+            ExtractedData extractedData = strategySelector.extract(url);
+            if (extractedData == null || !extractedData.isSuccess()) {
+                return ResponseEntity.status(500).body("Failed to extract data from URL");
+            }
+
+            // 🧠 Run Enhanced Analysis
+            try {
+                org.jsoup.nodes.Document doc = jsoupStrategy.getDocument(url);
+                extractedData.setSeoIssues(analysisService.performSeoAudit(doc, extractedData));
+                extractedData.setTechStack(analysisService.detectTechStack(doc));
+                extractedData.setColorPalette(analysisService.extractColorPalette(doc));
+                extractedData.setSummary(analysisService.generateSummary(extractedData));
+            } catch (Exception e) {
+                MyLogger.warn("Enhanced analysis failed: " + e.getMessage());
+            }
+
+            String storagePath = storageService.saveExtractedData(extractedData);
+            extractionStore.save(extractedData, storagePath);
+            return ResponseEntity.ok(extractedData);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("SOMETHING WENT WRONG");
+            MyLogger.err("Error during extraction: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("SOMETHING WENT WRONG: " + e.getMessage());
         }
-        if (data == null) {
-            return ResponseEntity.status(204).build();
+    }
+
+    @Autowired
+    private MediaService mediaService;
+
+    @GetMapping("/media")
+    public ResponseEntity<?> getMedia() {
+        ExtractedData lastData = extractionStore.getLastResult();
+        
+        if (lastData == null) {
+            return ResponseEntity.badRequest().body("No extracted data available. Please run /extract first.");
         }
-        return ResponseEntity.status(200).build();
+        
+        List<String> imageUrls = lastData.getImageUrls();
+        List<String> videoUrls = lastData.getVideoUrls();
+        
+        if ((imageUrls == null || imageUrls.isEmpty()) && (videoUrls == null || videoUrls.isEmpty())) {
+            return ResponseEntity.badRequest().body("No media links found in the last extraction.");
+        }
+        
+        MyLogger.info("Media content download requested for " + 
+                (imageUrls != null ? imageUrls.size() : 0) + " images and " + 
+                (videoUrls != null ? videoUrls.size() : 0) + " videos");
+                
+        try {
+            List<byte[]> media = mediaService.downloadMedia(imageUrls, videoUrls);
+            if (media.isEmpty()) {
+                return ResponseEntity.status(404).body("No media content could be downloaded from stored links");
+            }
+            return ResponseEntity.ok(media);
+        } catch (Exception e) {
+            MyLogger.err("Error during media download: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("FAILED TO FETCH MEDIA CONTENT: " + e.getMessage());
+        }
     }
 
     @GetMapping("/getTags")
-    public ResponseEntity<?> getAllTags() {
-        MyLogger.info("TAGS REQUESTED");
-        List<String> list = urlDataService.getAllTags();
-        return ResponseEntity.ok().body(list);
-    }
-
-    @GetMapping("/search/{keyword}")
-    public ResponseEntity<?> search(@PathVariable String keyword) {
-        MyLogger.info("KEYWORD SEARCH REQUESTED");
-        return ResponseEntity.ok().body(urlDataService.searchString(keyword));
-    }
-
-    @GetMapping("/getImages")
-    public ResponseEntity<?> getImages() throws Exception {
-        MyLogger.info("GET IMAGES REQUESTED");
-        return ResponseEntity.of(Optional.ofNullable(urlDataService.images()));
-    }
-
-    @GetMapping("/getData")
-    public ResponseEntity<?> getData() throws IOException {
-        MyLogger.info("GET ZIP FILE REQUESTED");
-        Resource file = urlDataService.sendZip();
-        if (file == null) {
-            MyLogger.warn("REQUEST NOT COMPLETED");
-            return ResponseEntity.status(500).build();
+    public ResponseEntity<List<String>> getTags() {
+        ExtractedData lastData = extractionStore.getLastResult();
+        if (lastData == null || lastData.getAnchorTags() == null) {
+            return ResponseEntity.ok(List.of());
         }
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", "data.zip");
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(file);
+        return ResponseEntity.ok(lastData.getAnchorTags());
     }
 
     @GetMapping("/getText")
-    public ResponseEntity<?> getAllText(){
-        List<String> stringList = urlDataService.textListStrings();
-        if(stringList.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    public ResponseEntity<List<String>> getText() {
+        ExtractedData lastData = extractionStore.getLastResult();
+        if (lastData == null || lastData.getContent() == null || lastData.getContent().isEmpty()) {
+            return ResponseEntity.ok(List.of("No data available for the last extraction."));
         }
-        return ResponseEntity.ok().body(urlDataService.textListStrings());
+
+        // Properly split content into paragraphs and filter empty/short fragments
+        List<String> paragraphs = Arrays.stream(lastData.getContent().split("\\n+"))
+                .map(String::trim)
+                .filter(s -> s.length() > 5)
+                .distinct()
+                .limit(100)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(paragraphs.isEmpty() ? List.of("No significant text content detected.") : paragraphs);
+    }
+
+    @PostMapping("/insert")
+    public ResponseEntity<?> insertBulk(@RequestBody List<String> urls, @RequestParam(value = "jsEnable", required = false) Boolean jsEnable) {
+        return extract(urls);
+    }
+
+    @GetMapping("/download")
+    public ResponseEntity<Resource> downloadZip() {
+        String lastStoragePath = extractionStore.getLastStoragePath();
+        if (lastStoragePath == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            Path zipPath = zipService.zipDirectory(lastStoragePath);
+            Resource resource = new UrlResource(zipPath.toUri());
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipPath.getFileName().toString() + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            MyLogger.err("Error creating zip: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

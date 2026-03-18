@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export const getText = async () => {
 
-    const baseUrl = process.env.REACT_APP_BASE_URL;
+    const baseUrl = import.meta.env.VITE_BASE_URL;
     const url = `${baseUrl}/urlData/getText`;
 
 

@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 export const getImages = async () => {
-    const baseUrl = process.env.REACT_APP_BASE_URL;
-    const url = `${baseUrl}/urlData/getImages`;
+    const baseUrl = import.meta.env.VITE_BASE_URL;
+    const url = `${baseUrl}/urlData/media`;
 
     try {
         const response = await axios.get(url, {
