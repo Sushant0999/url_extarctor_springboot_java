@@ -1,26 +1,19 @@
 import React, { useState } from 'react';
-import { Button, Card, CardBody, CardFooter, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalFooter, Text, ModalBody, Box, Stack, Skeleton, Icon, VStack, Badge, HStack, Divider } from '@chakra-ui/react';
 import { getText } from '../../apis/GetText';
-import { BiText } from 'react-icons/bi';
+import { BiText, BiX } from 'react-icons/bi';
 
-export default function TextCard() {
+export default function TextCard({ taskId }) {
     const [isOpen, setIsOpen] = useState(false);
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const handleOpen = () => {
-        setIsOpen(true);
-        fetchData();
-    };
-
-    const handleClose = () => {
-        setIsOpen(false);
-    };
+    const handleOpen = () => { setIsOpen(true); fetchData(); };
+    const handleClose = () => setIsOpen(false);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const content = await getText();
+            const content = await getText(taskId);
             setData(content);
         } catch (error) {
             console.error('Error fetching text:', error);
@@ -30,91 +23,78 @@ export default function TextCard() {
     };
 
     return (
-        <Box>
-            <Card 
-                className="glass-effect"
-                overflow="hidden"
-                borderRadius="2xl"
-                height="100%"
-                border="1px solid rgba(255,255,255,0.05)"
-                _hover={{ borderColor: 'teal.400' }}
-                transition="all 0.3s"
-            >
-                <CardBody p={8}>
-                    <VStack align="start" spacing={4}>
-                        <Box bg="teal.500" p={3} borderRadius="xl">
-                            <Icon as={BiText} color="white" boxSize={6} />
-                        </Box>
-                        <Box>
-                            <VStack align="start" spacing={0}>
-                                <Text fontSize="2xl" fontWeight="bold" color="white">Paragraphs</Text>
-                                <Badge colorScheme="teal" borderRadius="md" variant="subtle">CONTENT</Badge>
-                            </VStack>
-                        </Box>
-                        <Text color="gray.400" fontSize="sm">
-                            Capture all text blocks, descriptions, and article content found on the page.
-                        </Text>
-                    </VStack>
-                </CardBody>
-                <CardFooter bg="rgba(255,255,255,0.02)" borderTop="1px solid rgba(255,255,255,0.05)">
-                    <Button 
-                        width="100%" 
-                        colorScheme="teal" 
-                        variant="ghost"
-                        onClick={handleOpen}
-                    >
+        <div>
+            {/* Card */}
+            <div className="glass-effect overflow-hidden rounded-3xl h-full border border-white/5 hover:border-teal-400/50 transition-all duration-300 flex flex-col">
+                <div className="p-8 flex flex-col gap-4 flex-1">
+                    <div className="bg-teal-600 p-3 rounded-xl w-fit">
+                        <BiText className="text-white w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-2xl font-bold text-gray-100">Paragraphs</p>
+                        <span className="text-[10px] font-black tracking-widest uppercase bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded">
+                            CONTENT
+                        </span>
+                    </div>
+                    <p className="text-gray-400 text-sm">
+                        Capture all text blocks, descriptions, and article content found on the page.
+                    </p>
+                </div>
+                <div className="bg-white/2 border-t border-white/5 p-4">
+                    <button onClick={handleOpen}
+                        className="w-full text-teal-300 hover:text-teal-200 hover:bg-teal-500/10 py-2 rounded-xl text-sm font-bold transition-all duration-300">
                         Read Text
-                    </Button>
-                </CardFooter>
-            </Card>
+                    </button>
+                </div>
+            </div>
 
-            <Modal isOpen={isOpen} onClose={handleClose} size="3xl" scrollBehavior="inside">
-                <ModalOverlay backdropFilter="blur(10px)" bg="blackAlpha.700" />
-                <ModalContent 
-                    className="glass-effect" 
-                    bg="rgba(15, 23, 42, 0.95)" 
-                    borderRadius="3xl"
-                    border="1px solid rgba(255,255,255,0.1)"
-                    color="white"
-                >
-                    <ModalHeader borderBottom="1px solid rgba(255,255,255,0.05)">
-                        <HStack>
-                            <Icon as={BiText} color="teal.400" />
-                            <Text>Extracted Content</Text>
-                        </HStack>
-                    </ModalHeader>
-                    <ModalCloseButton />
-                    <ModalBody py={6}>
-                        {loading ? (
-                            <Stack spacing={4}>
-                                {[1, 2, 3, 4].map(i => (
-                                    <Skeleton key={i} height="80px" borderRadius="lg" />
-                                ))}
-                            </Stack>
-                        ) : data && data.length > 0 ? (
-                            <VStack spacing={6} align="stretch">
-                                {data.map((text, idx) => (
-                                    <Box key={idx}>
-                                        <Text fontSize="md" lineHeight="tall" color="gray.200">
-                                            {text}
-                                        </Text>
-                                        {idx < data.length - 1 && <Divider mt={6} opacity={0.1} />}
-                                    </Box>
-                                ))}
-                            </VStack>
-                        ) : (
-                            <VStack p={10}>
-                                <Text color="gray.400">No text content extracted from this page.</Text>
-                            </VStack>
-                        )}
-                    </ModalBody>
-                    <ModalFooter borderTop="1px solid rgba(255,255,255,0.05)">
-                        <Button colorScheme="teal" onClick={handleClose} borderRadius="full">
-                            Dismiss
-                        </Button>
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
-        </Box >
+            {/* Modal */}
+            {isOpen && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={handleClose} />
+                    <div className="relative z-10 glass-effect bg-[rgba(15,23,42,0.97)] rounded-[32px] border border-white/10 w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl">
+                        <div className="flex items-center justify-between px-8 py-6 border-b border-white/5">
+                            <div className="flex items-center gap-3">
+                                <BiText className="text-teal-400 w-5 h-5" />
+                                <span className="text-gray-100 font-bold">Extracted Content</span>
+                            </div>
+                            <button onClick={handleClose} className="text-gray-400 hover:text-gray-100 transition-colors">
+                                <BiX className="w-6 h-6" />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto py-6 px-8 flex-1">
+                            {loading ? (
+                                <div className="flex flex-col gap-4">
+                                    {[1,2,3,4].map(i => (
+                                        <div key={i} className="h-20 bg-white/5 rounded-xl animate-pulse" />
+                                    ))}
+                                </div>
+                            ) : data && data.length > 0 ? (
+                                <div className="flex flex-col gap-6">
+                                    {data.map((text, idx) => (
+                                        <div key={idx}>
+                                            <p className="text-base leading-relaxed text-gray-200">{text}</p>
+                                            {idx < data.length - 1 && (
+                                                <hr className="mt-6 border-white/10" />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="py-16 text-center">
+                                    <p className="text-gray-400">No text content extracted from this page.</p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="px-8 py-5 border-t border-white/5 flex justify-end">
+                            <button onClick={handleClose}
+                                className="bg-teal-600 hover:bg-teal-500 text-white px-6 py-2 rounded-full text-sm font-bold transition-all duration-300">
+                                Dismiss
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }

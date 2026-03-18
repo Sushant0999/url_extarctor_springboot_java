@@ -1,56 +1,57 @@
 import React from 'react';
-import { Box, Card, CardBody, Text, VStack, Heading, Icon, Badge, HStack, SimpleGrid, Flex } from '@chakra-ui/react';
 import { BiCheckCircle, BiErrorCircle, BiCheckShield } from 'react-icons/bi';
+
+const statusConfig = {
+    PASS:    { color: 'text-emerald-400', badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+    WARNING: { color: 'text-orange-400',  badge: 'bg-orange-500/20 text-orange-300 border-orange-500/30' },
+    FAIL:    { color: 'text-pink-400',    badge: 'bg-pink-500/20 text-pink-300 border-pink-500/30' },
+};
 
 export default function SeoAuditCard({ issues }) {
     return (
-        <Card 
-            className="premium-card"
-            borderRadius="40px"
-            overflow="hidden"
-            bg="transparent"
-        >
-            <CardBody p={10}>
-                <VStack align="start" spacing={10} width="100%">
-                    <Flex width="100%" justify="space-between" align="center">
-                        <HStack spacing={4}>
-                            <Box bgGradient="linear(to-br, #f472b6, #db2777)" p={3} borderRadius="18px">
-                                <Icon as={BiCheckShield} color="white" boxSize={6} />
-                            </Box>
-                            <VStack align="start" spacing={0}>
-                                <Heading size="md" color="white" fontWeight="800">SEO Integrity Scan</Heading>
-                                <Text color="gray.500" fontSize="xs" fontWeight="700" letterSpacing="widest">DIAGNOSTIC ANALYSIS</Text>
-                            </VStack>
-                        </HStack>
-                    </Flex>
+        <div className="premium-card rounded-[40px] overflow-hidden bg-transparent">
+            <div className="p-10 flex flex-col gap-10 w-full">
+                {/* Header */}
+                <div className="flex items-center gap-4">
+                    <div className="bg-gradient-to-br from-pink-400 to-pink-700 p-3 rounded-[18px]">
+                        <BiCheckShield className="text-white w-6 h-6" />
+                    </div>
+                    <div className="flex flex-col">
+                        <h3 className="text-lg font-black text-gray-100 tracking-wide">SEO Integrity Scan</h3>
+                        <span className="text-[10px] font-bold text-gray-500 tracking-[0.2em] uppercase">DIAGNOSTIC ANALYSIS</span>
+                    </div>
+                </div>
 
-                    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={10} width="100%">
-                        {issues && Object.entries(issues).map(([key, issue]) => (
-                            <HStack key={key} spacing={5} p={6} bg="whiteAlpha.50" borderRadius="24px" border="1px solid rgba(255,255,255,0.05)" transition="all 0.3s" _hover={{ bg: "whiteAlpha.100", transform: "translateY(-4px)" }}>
-                                <Icon 
-                                    as={issue.status === 'PASS' ? BiCheckCircle : BiErrorCircle} 
-                                    color={issue.status === 'PASS' ? "emerald.400" : "pink.400"} 
-                                    boxSize={6} 
-                                />
-                                <VStack align="start" spacing={1}>
-                                    <Text color="gray.300" fontWeight="800" fontSize="xs" letterSpacing="0.05em">{key.replace(/([A-Z])/g, ' $1').toUpperCase()}</Text>
-                                    <Badge 
-                                        colorScheme={issue.status === 'PASS' ? 'emerald' : 'pink'} 
-                                        variant="subtle" 
-                                        px={2} 
-                                        py={0.5} 
-                                        borderRadius="md" 
-                                        fontSize="9px"
-                                        fontWeight="900"
-                                    >
-                                        {issue.status}
-                                    </Badge>
-                                </VStack>
-                            </HStack>
-                        ))}
-                    </SimpleGrid>
-                </VStack>
-            </CardBody>
-        </Card>
+                {/* Grid of issues */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                    {issues && Array.isArray(issues) && issues.map((issue, idx) => {
+                        const cfg = statusConfig[issue.status] || statusConfig.FAIL;
+                        const Icon = issue.status === 'PASS' ? BiCheckCircle : BiErrorCircle;
+                        return (
+                            <div
+                                key={idx}
+                                className="flex items-start gap-4 p-6 bg-white/5 rounded-3xl border border-white/5 transition-all duration-300 hover:bg-white/8 hover:-translate-y-1"
+                            >
+                                <Icon className={`${cfg.color} w-6 h-6 flex-shrink-0 mt-0.5`} />
+                                <div className="flex flex-col gap-1.5 min-w-0">
+                                    <span className="text-gray-300 font-black text-xs tracking-[0.05em] uppercase">
+                                        {issue.title?.toUpperCase()}
+                                    </span>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className={`text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded border ${cfg.badge}`}>
+                                            {issue.status}
+                                        </span>
+                                        <span className="text-gray-500 text-[9px] truncate">{issue.description}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                    {(!issues || issues.length === 0) && (
+                        <p className="text-gray-500 italic text-sm">No SEO issues detected.</p>
+                    )}
+                </div>
+            </div>
+        </div>
     );
 }

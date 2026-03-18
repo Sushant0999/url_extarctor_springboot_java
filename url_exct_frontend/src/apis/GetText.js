@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-export const getText = async () => {
+export const getText = async (taskId) => {
 
-    const baseUrl = import.meta.env.VITE_BASE_URL;
-    const url = `${baseUrl}/urlData/getText`;
+    const baseUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
+    const url = `${baseUrl}/urlData/getText/${taskId}`;
 
 
     try {

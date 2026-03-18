@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-export const getLink = async () => {
+export const getLink = async (taskId) => {
 
-    const baseUrl = import.meta.env.VITE_BASE_URL;
-    const url = `${baseUrl}/urlData/getTags`;
+    const baseUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
+    const url = `${baseUrl}/urlData/getTags/${taskId}`;
 
 
     try {

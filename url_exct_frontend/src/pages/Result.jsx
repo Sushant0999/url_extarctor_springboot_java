@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import Navbar from '../components/Navbar'
-import { Box, Button, SimpleGrid, Text, Container, VStack, Heading, Icon, Flex, Image, Tabs, TabList, TabPanels, Tab, TabPanel, Badge, HStack, Circle } from '@chakra-ui/react'
 import LinkCard from '../components/cards/LinkCard'
 import ImageCard from '../components/cards/ImageCard'
 import TextCard from '../components/cards/TextCard'
@@ -12,177 +11,221 @@ import DownloadFileComponent from '../components/DownloadToast'
 import { BiArrowBack, BiScreenshot, BiData, BiShieldQuarter } from 'react-icons/bi'
 import { motion } from 'framer-motion'
 
+const tabs = [
+    { name: 'Insights', icon: BiData },
+    { name: 'Snapshot', icon: BiScreenshot },
+    { name: 'Asset Map', icon: BiShieldQuarter },
+];
+
 export default function Result() {
     const navigate = useNavigate();
-    const [data, setData] = useState(null);
+    const [allData, setAllData] = useState([]);
+    const [activeIndex, setActiveIndex] = useState(0);
+    const data = allData[activeIndex] || null;
+    const [activeTab, setActiveTab] = useState(0);
+    const [dynamicColors, setDynamicColors] = useState({
+        primary: '#4338ca',
+        secondary: '#059669',
+        accent: '#7c3aed'
+    });
 
     useEffect(() => {
         const stored = localStorage.getItem('lastExtraction');
         if (stored) {
-            setData(JSON.parse(stored));
+            let parsed = JSON.parse(stored);
+            if (!Array.isArray(parsed)) {
+                parsed = [parsed];
+            }
+            if (parsed.length > 0) {
+                setAllData(parsed);
+            } else {
+                navigate('/');
+            }
         } else {
             navigate('/');
         }
     }, [navigate]);
 
+    useEffect(() => {
+        if (data) {
+            if (data.colorPalette && data.colorPalette.length >= 3) {
+                setDynamicColors({
+                    primary: data.colorPalette[0],
+                    secondary: data.colorPalette[1],
+                    accent: data.colorPalette[2] || data.colorPalette[0]
+                });
+            } else if (data.colorPalette && data.colorPalette.length > 0) {
+                setDynamicColors({
+                    primary: data.colorPalette[0],
+                    secondary: data.colorPalette[0],
+                    accent: data.colorPalette[0]
+                });
+            }
+        }
+    }, [data]);
+
     if (!data) return null;
 
+    const visibleTabs = tabs.filter(t => t.name !== 'Snapshot' || data.screenshotBase64);
+    const reportId = Math.floor(Math.random() * 90000) + 10000;
+
     return (
-        <Box minH="100vh" pb={24} position="relative" overflow="hidden" bg="transparent">
-            {/* Advanced Ambient background */}
-            <Circle size="700px" bg="indigo.900" filter="blur(160px)" position="absolute" top="-150px" left="-150px" opacity="0.2" zIndex="-1" />
-            <Circle size="500px" bg="emerald.900" filter="blur(140px)" position="absolute" top="20%" right="-100px" opacity="0.1" zIndex="-1" />
-            <Circle size="600px" bg="purple.900" filter="blur(150px)" position="absolute" bottom="-100px" left="20%" opacity="0.1" zIndex="-1" />
+        <div className="min-h-screen pb-24 relative overflow-hidden bg-[#020617]">
+            {/* Dynamic ambient glows */}
+            <div
+                className="rounded-full w-[800px] h-[800px] blur-[160px] absolute -top-[200px] -left-[200px] opacity-10 z-0 pointer-events-none transition-all duration-1000"
+                style={{ backgroundColor: dynamicColors.primary }}
+            />
+            <div
+                className="rounded-full w-[600px] h-[600px] blur-[140px] absolute top-[15%] -right-[150px] opacity-8 z-0 pointer-events-none transition-all duration-1000"
+                style={{ backgroundColor: dynamicColors.secondary }}
+            />
+            <div
+                className="rounded-full w-[700px] h-[700px] blur-[150px] absolute -bottom-[150px] left-[15%] opacity-6 z-0 pointer-events-none transition-all duration-1000"
+                style={{ backgroundColor: dynamicColors.accent }}
+            />
 
             <Navbar />
-            
-            <Container maxW="container.xl" pt={{ base: 10, md: 24 }}>
-                <VStack spacing={{ base: 10, md: 16 }} align="stretch" className="animate-fade-in">
-                    
-                    {/* Diagnostic Header */}
-                    <Flex 
-                        direction={{ base: 'column', lg: 'row' }} 
-                        justify="space-between" 
-                        align={{ base: 'start', lg: 'center' }} 
-                        gap={8}
-                    >
-                        <VStack align="start" spacing={4}>
-                            <HStack spacing={3}>
-                                <Badge px={3} py={1} borderRadius="full" bg="whiteAlpha.100" color="indigo.300" border="1px solid rgba(129, 140, 248, 0.2)" fontSize="xs" fontWeight="bold">
-                                    REPORT ID: #{Math.floor(Math.random() * 90000) + 10000}
-                                </Badge>
-                                <Text color="gray.500" fontSize="sm" fontWeight="600" isTruncated maxW="400px">
+
+            <div className="max-w-[1280px] mx-auto pt-20 md:pt-24 px-4 md:px-8 relative z-10">
+                <div className="flex flex-col gap-10 md:gap-16 animate-fade-in">
+
+                    {/* Header */}
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-3 flex-wrap">
+                                <span
+                                    className="text-xs font-black px-3 py-1 rounded-full border bg-white/5 text-gray-200"
+                                    style={{ borderColor: dynamicColors.primary + '88' }}
+                                >
+                                    REPORT ID: #{reportId}
+                                </span>
+                                <span className="text-gray-500 text-sm font-semibold truncate max-w-[400px]">
                                     {data.baseUrl}
-                                </Text>
-                            </HStack>
-                            <Heading 
-                                fontSize={{ base: "3xl", md: "5xl" }} 
-                                color="white" 
-                                fontWeight="900" 
-                                letterSpacing="tight"
-                                className="text-gradient"
+                                </span>
+                            </div>
+                            <h1
+                                className="text-4xl md:text-5xl font-black tracking-tight"
+                                style={{
+                                    background: `linear-gradient(to bottom right, #e2e8f0, ${dynamicColors.primary}, ${dynamicColors.secondary})`,
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    backgroundClip: 'text',
+                                }}
                             >
                                 {data.title || "Extraction Summary"}
-                            </Heading>
-                        </VStack>
-                        
-                        <HStack spacing={4} width={{ base: 'full', lg: 'auto' }}>
-                            <Button 
-                                leftIcon={<BiArrowBack />} 
-                                variant="outline" 
-                                color="gray.400" 
-                                borderColor="whiteAlpha.100"
-                                _hover={{ bg: 'whiteAlpha.100', color: 'white', borderColor: 'indigo.400' }}
+                            </h1>
+                        </div>
+
+                        <div className="flex items-center gap-4 w-full lg:w-auto">
+                            <button
                                 onClick={() => navigate('/')}
-                                borderRadius="20px"
-                                size="lg"
-                                px={8}
-                                fontWeight="700"
+                                className="flex items-center gap-2 h-12 px-8 rounded-2xl border border-white/10 text-gray-400 text-sm font-bold hover:bg-white/5 hover:text-gray-100 transition-all duration-300"
+                                style={{ ['--hover-border']: dynamicColors.primary }}
                             >
-                                START OVER
-                            </Button>
-                            <DownloadFileComponent />
-                        </HStack>
-                    </Flex>
+                                <BiArrowBack className="w-4 h-4" /> START OVER
+                            </button>
+                            <DownloadFileComponent taskId={data.taskId} />
+                        </div>
+                    </div>
 
-                    {/* Dashboard Control Architecture */}
-                    <Tabs variant="unstyled">
-                        <TabList 
-                            bg="rgba(255,255,255,0.02)" 
-                            p={2} 
-                            borderRadius="24px" 
-                            border="1px solid rgba(255,255,255,0.05)" 
-                            width="fit-content" 
-                            mb={12}
-                            display="flex"
-                            gap={3}
-                        >
-                            {[
-                                { name: 'Insights', icon: BiData },
-                                ...(data.screenshotBase64 ? [{ name: 'Snapshot', icon: BiScreenshot }] : []),
-                                { name: 'Asset Map', icon: BiShieldQuarter }
-                            ].map((tab) => (
-                                <Tab
-                                    key={tab.name}
-                                    px={10}
-                                    py={4}
-                                    borderRadius="18px"
-                                    color="gray.500"
-                                    fontSize="xs"
-                                    fontWeight="800"
-                                    letterSpacing="0.1em"
-                                    textTransform="uppercase"
-                                    _selected={{ 
-                                        color: 'white', 
-                                        bg: 'indigo.600',
-                                        boxShadow: '0 8px 25px rgba(99, 102, 241, 0.3)' 
-                                    }}
-                                    _hover={{ color: 'whiteAlpha.800' }}
-                                    transition="all 0.4s cubic-bezier(0.16, 1, 0.3, 1)"
+                    {/* URL Selector for Bulk results */}
+                    {allData.length > 1 && (
+                        <div className="flex bg-white/5 p-2 rounded-2xl gap-2 overflow-x-auto whitespace-nowrap mb-[-1rem]">
+                            {allData.map((d, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setActiveIndex(i)}
+                                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                                        activeIndex === i
+                                            ? 'text-white shadow-lg bg-white/10'
+                                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                    }`}
                                 >
-                                    <HStack spacing={3}>
-                                        <Icon as={tab.icon} boxSize={4} />
-                                        <Text>{tab.name}</Text>
-                                    </HStack>
-                                </Tab>
+                                    {d.baseUrl || `Target ${i + 1}`}
+                                </button>
                             ))}
-                        </TabList>
+                        </div>
+                    )}
 
-                        <TabPanels>
-                            <TabPanel p={0}>
-                                <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={10}>
-                                    <Box gridColumn={{ lg: "span 2" }}>
-                                        <SummaryCard summary={data.summary} />
-                                    </Box>
-                                    <TechStackCard tech={data.techStack} colors={data.colorPalette} />
-                                    <Box gridColumn={{ lg: "span 3" }}>
-                                        <SeoAuditCard issues={data.seoIssues} />
-                                    </Box>
-                                </SimpleGrid>
-                            </TabPanel>
-
-                            {data.screenshotBase64 && (
-                                <TabPanel p={0}>
-                                    <Box 
-                                        borderRadius="40px" 
-                                        overflow="hidden" 
-                                        className="glass-effect" 
-                                        p={4}
-                                        bg="blackAlpha.600"
-                                        border="1px solid rgba(129, 140, 248, 0.1)"
+                    {/* Tabs */}
+                    <div>
+                        <div className="inline-flex gap-2 bg-white/2 p-2 rounded-3xl border border-white/5 mb-10 flex-wrap">
+                            {visibleTabs.map((tab, idx) => {
+                                const Icon = tab.icon;
+                                const isActive = activeTab === idx;
+                                return (
+                                    <button
+                                        key={tab.name}
+                                        onClick={() => setActiveTab(idx)}
+                                        className={`flex items-center gap-2 px-8 py-3.5 rounded-[18px] text-xs font-black tracking-[0.1em] uppercase transition-all duration-300 ${
+                                            isActive ? 'text-gray-100' : 'text-gray-500 hover:text-gray-300'
+                                        }`}
+                                        style={isActive ? {
+                                            background: dynamicColors.primary,
+                                            boxShadow: `0 8px 25px ${dynamicColors.primary}40`
+                                        } : {}}
                                     >
-                                        <Image 
-                                            src={`data:image/png;base64,${data.screenshotBase64}`} 
-                                            alt="Visual Analysis" 
-                                            borderRadius="32px"
-                                            width="100%"
-                                            maxH="1000px"
-                                            objectFit="contain"
-                                            transition="transform 0.5s ease"
-                                            _hover={{ transform: 'scale(1.01)' }}
-                                            loading="lazy"
-                                        />
-                                    </Box>
-                                </TabPanel>
+                                        <Icon className="w-4 h-4" />
+                                        {tab.name}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Tab Panels */}
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4 }}
+                        >
+                            {/* Insights */}
+                            {activeTab === 0 && (
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                    <div className="lg:col-span-2">
+                                        <SummaryCard summary={data.summary} />
+                                    </div>
+                                    <div>
+                                        <TechStackCard tech={data.techStack} colors={data.colorPalette} />
+                                    </div>
+                                    <div className="lg:col-span-3">
+                                        <SeoAuditCard issues={data.seoIssues} />
+                                    </div>
+                                </div>
                             )}
 
-                            <TabPanel p={0}>
-                                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
+                            {/* Snapshot */}
+                            {visibleTabs[activeTab]?.name === 'Snapshot' && data.screenshotBase64 && (
+                                <div className="glass-effect rounded-[40px] overflow-hidden p-4 border border-indigo-400/10 bg-black/60">
+                                    <img
+                                        src={`data:image/png;base64,${data.screenshotBase64}`}
+                                        alt="Visual Analysis"
+                                        className="rounded-[32px] w-full max-h-[1000px] object-contain hover:scale-[1.01] transition-transform duration-500"
+                                        loading="lazy"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Asset Map */}
+                            {visibleTabs[activeTab]?.name === 'Asset Map' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     <motion.div whileHover={{ y: -12 }} transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}>
-                                        <LinkCard />
+                                        <LinkCard taskId={data.taskId} />
                                     </motion.div>
                                     <motion.div whileHover={{ y: -12 }} transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}>
-                                        <ImageCard />
+                                        <ImageCard taskId={data.taskId} />
                                     </motion.div>
                                     <motion.div whileHover={{ y: -12 }} transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}>
-                                        <TextCard />
+                                        <TextCard taskId={data.taskId} />
                                     </motion.div>
-                                </SimpleGrid>
-                            </TabPanel>
-                        </TabPanels>
-                    </Tabs>
-                </VStack>
-            </Container>
-        </Box>
+                                </div>
+                            )}
+                        </motion.div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
     )
 }

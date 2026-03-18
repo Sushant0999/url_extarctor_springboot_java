@@ -1,59 +1,44 @@
 import { useState } from 'react';
-import { Button, useToast } from "@chakra-ui/react";
 import { getData } from "../apis/GetData";
+import { BiDownload } from 'react-icons/bi';
 
-const DownloadFileComponent = () => {
-    const [loadingToastId, setLoadingToastId] = useState(null);
-    const toast = useToast();
+const DownloadFileComponent = ({ taskId }) => {
+    const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState(null); // 'success' | 'error' | null
 
     const handleDownloadFile = async () => {
+        setLoading(true);
+        setStatus(null);
         try {
-            // Show loading toast
-            setLoadingToastId(
-                toast({
-                    title: "Downloading data...",
-                    status: "info",
-                    duration: 2000, // Indefinite duration
-                    isClosable: true,
-                })
-            );
-
-            // Download data
-            const data = await getData();
-
-            // Hide loading toast
-            toast.close(loadingToastId);
-
-            // Show success toast
-            toast({
-                title: "Data downloaded successfully",
-                status: "success",
-                duration: 3000, // 3 seconds
-                isClosable: true,
-            });
-
+            await getData(taskId);
+            setStatus('success');
         } catch (error) {
-            // Hide loading toast
-            if (loadingToastId) {
-                toast.close(loadingToastId);
-            }
-            // Show error toast
-            toast({
-                title: "Error downloading data",
-                description: error.message || "An error occurred while downloading data",
-                status: "error",
-                duration: 5000, // 5 seconds
-                isClosable: true,
-            });
-
             console.error("Error downloading data:", error);
+            setStatus('error');
+        } finally {
+            setLoading(false);
+            setTimeout(() => setStatus(null), 3000);
         }
     };
 
     return (
-        <>
-            <Button onClick={handleDownloadFile}>Download File</Button>
-        </>
+        <button
+            onClick={handleDownloadFile}
+            disabled={loading}
+            className={`flex items-center gap-2 h-12 px-6 rounded-2xl text-sm font-bold transition-all duration-300
+                ${status === 'success' ? 'bg-emerald-600 text-white' :
+                  status === 'error'   ? 'bg-red-600 text-white' :
+                  'bg-gradient-to-r from-[#818cf8] to-[#6366f1] text-white shadow-[0_6px_20px_-6px_rgba(99,102,241,0.5)] hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-6px_rgba(99,102,241,0.6)]'}
+                ${loading ? 'opacity-60 cursor-not-allowed' : ''}
+            `}
+        >
+            {loading ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+                <BiDownload className="w-4 h-4" />
+            )}
+            {status === 'success' ? 'Downloaded!' : status === 'error' ? 'Error!' : 'Download'}
+        </button>
     );
 };
 

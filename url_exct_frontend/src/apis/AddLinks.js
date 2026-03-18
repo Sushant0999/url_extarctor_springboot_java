@@ -1,30 +1,19 @@
 import axios from 'axios';
 
-export const addLinks = async (link, enable) => {
-
-    const baseUrl = import.meta.env.VITE_BASE_URL;
+export const addLinks = async (link) => {
+    const baseUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
     const url = `${baseUrl}/urlData/extract`;
 
-    const list = []
-    list.push(link)
-
-    let response;
-
     try {
-        response = await axios.post(url, list, {
+        // The backend expects a single URL string OR an array of URLs
+        const response = await axios.post(url, link, {
             headers: {
                 'Content-Type': 'application/json',
-            },
-            mode: 'cors',
-            date: list
+            }
         });
-        // return response;
-
+        return response.data; // This is the taskId mapping map
     } catch (error) {
-        console.error('Error fetching images:', error);
+        console.error('Error starting extraction task:', error);
         throw error;
-    }
-    finally {
-        return response;
     }
 };

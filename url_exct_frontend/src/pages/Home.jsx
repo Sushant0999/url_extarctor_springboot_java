@@ -1,41 +1,22 @@
 import React from 'react'
 import Navbar from '../components/Navbar'
 import SearchBox from '../components/SearchBox'
-import { Box, Container, Circle, VStack } from '@chakra-ui/react'
 
 export default function Home() {
     return (
-        <Box minH="100vh" position="relative" overflow="hidden">
+        <div className="min-h-screen relative overflow-hidden bg-[#030712]">
             {/* Ambient Background Glows */}
-            <Circle 
-                size="800px" 
-                bg="blue.900" 
-                filter="blur(160px)" 
-                position="absolute" 
-                top="-300px" 
-                right="-200px" 
-                opacity="0.3"
-                zIndex="0"
-            />
-            <Circle 
-                size="600px" 
-                bg="purple.900" 
-                filter="blur(140px)" 
-                position="absolute" 
-                bottom="-200px" 
-                left="-100px" 
-                opacity="0.15"
-                zIndex="0"
-            />
+            <div className="rounded-full w-[800px] h-[800px] bg-blue-900 blur-[160px] absolute -top-[300px] -right-[200px] opacity-30 z-0 pointer-events-none" />
+            <div className="rounded-full w-[600px] h-[600px] bg-purple-900 blur-[140px] absolute -bottom-[200px] -left-[100px] opacity-15 z-0 pointer-events-none" />
 
-            <Box position="relative" zIndex="1">
+            <div className="relative z-10">
                 <Navbar />
-                <Container maxW="container.lg" pt={{ base: 20, md: 32 }}>
-                    <VStack spacing={12}>
+                <div className="max-w-[900px] mx-auto pt-20 md:pt-32 px-4">
+                    <div className="flex flex-col gap-12 animate-fade-in">
                         <SearchBox />
-                    </VStack>
-                </Container>
-            </Box>
-        </Box>
+                    </div>
+                </div>
+            </div>
+        </div>
     )
 }

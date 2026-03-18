@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-export const getData = async () => {
-    const baseUrl = import.meta.env.VITE_BASE_URL;
-    const url = `${baseUrl}/urlData/download`;
+export const getData = async (taskId) => {
+    const baseUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
+    const url = `${baseUrl}/urlData/download/${taskId}`;
 
     try {
         const response = await axios.get(url, {

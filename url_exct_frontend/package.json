@@ -26,8 +26,12 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
     "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
     "sass": "^1.71.1",
+    "tailwindcss": "^4.2.1",
     "vite": "^5.1.4"
   },
   "overrides": {
