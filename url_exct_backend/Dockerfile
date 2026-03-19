@@ -66,7 +66,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Create a minimal runtime image
-FROM openjdk:17-jdk-alpine
+FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
 # Copy the JAR file from the build stage to the current directory
