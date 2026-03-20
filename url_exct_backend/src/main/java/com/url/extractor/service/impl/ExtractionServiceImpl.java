@@ -33,7 +33,7 @@ public class ExtractionServiceImpl implements ExtractionService {
     @Autowired
     private ExtractionStore extractionStore;
 
-    @Autowired
+    @Autowired(required = false)
     private UrlProducer urlProducer;
 
     @Autowired
@@ -58,8 +58,13 @@ public class ExtractionServiceImpl implements ExtractionService {
             try {
                 urlTaskExecutor.execute(() -> processSingleUrl(taskId, url));
             } catch (RejectedExecutionException e) {
-                MyLogger.warn("ExtractionService: Local threads busy! Offloading to RabbitMQ: " + url);
-                urlProducer.sendUrl(taskId, url);
+                if (urlProducer != null) {
+                    MyLogger.warn("ExtractionService: Local threads busy! Offloading to RabbitMQ: " + url);
+                    urlProducer.sendUrl(taskId, url);
+                } else {
+                    MyLogger.err("ExtractionService: Local threads busy and RabbitMQ is disabled! Dropping URL: " + url);
+                    taskTrackerService.failTask(taskId);
+                }
             }
         }
 

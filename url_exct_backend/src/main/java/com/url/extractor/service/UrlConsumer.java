@@ -5,9 +5,11 @@ import com.url.extractor.dto.ExtractionMessage;
 import com.url.extractor.utils.MyLogger;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
+@ConditionalOnProperty(name = "app.rabbitmq.enabled", havingValue = "true", matchIfMissing = true)
 public class UrlConsumer {
 
     @Autowired

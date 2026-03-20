@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -88,4 +89,20 @@ public class TaskTrackerService {
         taskResults.remove(taskId);
         emitters.remove(taskId);
     }
+
+    public Map<TaskStatus, Integer> getStatusCounts() {
+        Map<TaskStatus, Integer> counts = new HashMap<>();
+        for (TaskStatus status : TaskStatus.values()) {
+            counts.put(status, 0);
+        }
+        for (TaskStatus status : taskStatuses.values()) {
+            counts.put(status, counts.get(status) + 1);
+        }
+        return counts;
+    }
+
+    public int totalTasksCount() {
+        return taskStatuses.size();
+    }
 }
+
