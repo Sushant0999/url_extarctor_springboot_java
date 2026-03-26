@@ -41,6 +41,11 @@ public class UrlDataController {
     @Autowired
     private ZipService zipService;
 
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        return ResponseEntity.ok("UrlDataController is active!");
+    }
+
     // ─────────────────────────────────────────────────────────────────────────────
     // EXTRACT
     // ─────────────────────────────────────────────────────────────────────────────

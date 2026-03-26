@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/urlData/(.*)",
+      "destination": "YOUR_BACKEND_URL/urlData/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
