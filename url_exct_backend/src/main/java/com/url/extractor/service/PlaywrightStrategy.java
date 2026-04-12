@@ -4,6 +4,8 @@ import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
 import com.url.extractor.dto.ExtractedData;
 import com.url.extractor.helper.ExtractionStrategy;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.Semaphore;
@@ -12,8 +14,10 @@ import com.url.extractor.utils.MyLogger;
 @Service
 public class PlaywrightStrategy implements ExtractionStrategy {
 
-    // Restrict Playwright to 1 max concurrent instance to avoid OOM
-    private final Semaphore playwrightSemaphore = new Semaphore(1);
+    // Autowire the dynamic globally shared Semaphore limiting concurrency by hardware RAM
+    @Autowired
+    @Qualifier("playwrightSemaphore")
+    private Semaphore playwrightSemaphore;
 
     @Override
     public ExtractedData extract(String url) {

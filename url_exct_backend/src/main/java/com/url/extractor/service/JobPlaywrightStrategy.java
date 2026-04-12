@@ -8,6 +8,8 @@ import com.url.extractor.helper.JobExtractionStrategy;
 import com.url.extractor.utils.MyLogger;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -20,8 +22,9 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     
-    // Playwright consumes ~200-300MB per instance. We restrict this to 1 concurrent instance to prevent OOM on 512MB limits.
-    private final Semaphore playwrightSemaphore = new Semaphore(1);
+    @Autowired
+    @Qualifier("playwrightSemaphore")
+    private Semaphore playwrightSemaphore;
 
     @Override
     public List<JobDto> extract(String url) {
