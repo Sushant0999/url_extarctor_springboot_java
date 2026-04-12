@@ -3,7 +3,7 @@ import { BiLinkExternal } from 'react-icons/bi';
 import { motion } from 'framer-motion';
 import { getHealth } from '../apis/Actuator';
 
-export default function Nav() {
+export default function Nav({ isSearching }) {
   const [isUp, setIsUp] = useState(false);
 
   useEffect(() => {
@@ -37,19 +37,28 @@ export default function Nav() {
               onClick={() => window.location.href='/'}
             >
               <div 
-                className="bg-gradient-to-br from-[#818cf8] to-[#6366f1] p-1.5 rounded-xl shadow-[0_4px_15px_rgba(129,140,248,0.3)]"
+                className="bg-indigo-600 p-2 rounded-2xl shadow-[0_8px_20px_-5px_rgba(79,70,229,0.5)] relative group-hover:scale-105 transition-transform"
               >
                 <BiLinkExternal className="text-white w-5 h-5" />
+                {isSearching && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#0d1117] animate-pulse" />
+                )}
               </div>
-              <span className="text-lg font-[800] tracking-tight text-white">
-                URL<span className="bg-gradient-to-r from-[#818cf8] to-[#10b981] bg-clip-text text-transparent">X</span>
-              </span>
+              <div className="flex flex-col">
+                <span className="text-sm font-[900] tracking-tighter text-white leading-none">
+                  JOB <span className="text-indigo-400">EXTRACTOR</span>
+                </span>
+                <span className="text-[10px] font-[700] text-gray-500 uppercase tracking-widest mt-1">
+                  {isSearching ? 'Live Extraction' : 'Cloud Engine'}
+                </span>
+              </div>
             </div>
           </motion.div>
 
           <div className="hidden md:flex items-center gap-10">
             {[
               { label: 'Engine', path: '/' },
+              { label: 'Jobs', path: '/jobs' },
               { label: 'API', path: '/actuator' }
             ].map((item) => (
               <a

@@ -1,1 +1,0 @@
-import{a as o}from"./index-DEarcObs.js";const l=async t=>{const s="http://localhost:8080/urlData/results/bulk";try{return(await o.post(s,t,{headers:{"Content-Type":"application/json"}})).data}catch(r){throw console.error("Error fetching bulk results:",r),r}};export{l as getBulkResults};

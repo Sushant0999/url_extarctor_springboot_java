@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/urlData")
-@CrossOrigin(origins = "*", allowedHeaders = "*", maxAge = 3600L, methods = { RequestMethod.GET, RequestMethod.OPTIONS,
+@CrossOrigin(origins = "${app.allowed.origins}", allowedHeaders = "*", maxAge = 3600L, methods = { RequestMethod.GET, RequestMethod.OPTIONS,
         RequestMethod.POST })
 @Tag(name = "URL Extraction API", description = "Endpoints for background URL data extraction and status tracking. Supports multiple URLs in a single request.")
 public class UrlDataController {
