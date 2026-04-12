@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api/resume';
+const baseUrl = import.meta.env.VITE_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL = `${baseUrl}/api/resume`;
 
 export const parseResume = async (file) => {
     const formData = new FormData();
