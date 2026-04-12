@@ -13,62 +13,78 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 @Service
 public class JobPlaywrightStrategy implements JobExtractionStrategy {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    
+    // Playwright consumes ~200-300MB per instance. We restrict this to 1 concurrent instance to prevent OOM on 512MB limits.
+    private final Semaphore playwrightSemaphore = new Semaphore(1);
 
     @Override
     public List<JobDto> extract(String url) {
-        MyLogger.info("JobPlaywrightStrategy: Extracting from " + url);
+        MyLogger.info("JobPlaywrightStrategy: Queuing for extraction from " + url);
         
-        // Playwright objects are NOT thread-safe. We must create a new instance per thread
-        // to support parallel searching from the frontend without "__adopt__" errors.
-        try (Playwright playwright = Playwright.create();
-             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
-             BrowserContext context = browser.newContext(new Browser.NewContextOptions()
-                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
-                .setViewportSize(1920, 1080)
-             );
-             Page page = context.newPage()) {
+        try {
+            // Wait for the lock to acquire (limit 1 global concurrent playwright browser)
+            playwrightSemaphore.acquire();
+            MyLogger.info("JobPlaywrightStrategy: Acquired lock, extracting from " + url);
 
-            page.setExtraHTTPHeaders(Map.of(
-                "Accept-Language", "en-US,en;q=0.9",
-                "Referer", "https://www.google.com/"
-            ));
+            // Playwright objects are NOT thread-safe. We must create a new instance per thread
+            // to support parallel searching from the frontend without "__adopt__" errors.
+            try (Playwright playwright = Playwright.create();
+                 Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
+                 BrowserContext context = browser.newContext(new Browser.NewContextOptions()
+                    .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+                    .setViewportSize(1920, 1080)
+                 );
+                 Page page = context.newPage()) {
 
-            page.navigate(url, new Page.NavigateOptions().setTimeout(60000).setWaitUntil(com.microsoft.playwright.options.WaitUntilState.DOMCONTENTLOADED));
-            
-            // Allow some time for Dynamic data to fully load
-            page.waitForTimeout(6000);
+                page.setExtraHTTPHeaders(Map.of(
+                    "Accept-Language", "en-US,en;q=0.9",
+                    "Referer", "https://www.google.com/"
+                ));
 
-            if (url.contains("linkedin.com")) {
-                return extractFromLinkedIn(page);
-            } else if (url.contains("naukri.com")) {
-                return extractFromNaukri(page);
-            } else if (url.contains("cutshort.io")) {
-                return extractFromCutshort(page);
-            } else if (url.contains("foundit.in")) {
-                return extractFromFoundit(page);
-            } else if (url.contains("internshala.com")) {
-                return extractFromInternshala(page);
-            } else if (url.contains("shine.com")) {
-                return extractFromShine(page);
-            } else if (url.contains("hirist.com")) {
-                return extractFromHirist(page);
+                page.navigate(url, new Page.NavigateOptions().setTimeout(60000).setWaitUntil(com.microsoft.playwright.options.WaitUntilState.DOMCONTENTLOADED));
+                
+                // Allow some time for Dynamic data to fully load
+                page.waitForTimeout(6000);
+
+                if (url.contains("linkedin.com")) {
+                    return extractFromLinkedIn(page);
+                } else if (url.contains("naukri.com")) {
+                    return extractFromNaukri(page);
+                } else if (url.contains("cutshort.io")) {
+                    return extractFromCutshort(page);
+                } else if (url.contains("foundit.in")) {
+                    return extractFromFoundit(page);
+                } else if (url.contains("internshala.com")) {
+                    return extractFromInternshala(page);
+                } else if (url.contains("shine.com")) {
+                    return extractFromShine(page);
+                } else if (url.contains("hirist.com")) {
+                    return extractFromHirist(page);
+                }
+
+                List<JobDto> jobs = extractFromMosaicData(page);
+                if (jobs.isEmpty()) {
+                    jobs = extractWithSelectors(page);
+                }
+
+                return jobs;
+
+            } catch (Exception e) {
+                MyLogger.err("JobPlaywrightStrategy: Extraction error for " + url + ": " + e.getMessage());
+                return new ArrayList<>();
             }
-
-            List<JobDto> jobs = extractFromMosaicData(page);
-            if (jobs.isEmpty()) {
-                jobs = extractWithSelectors(page);
-            }
-
-            return jobs;
-
-        } catch (Exception e) {
-            MyLogger.err("JobPlaywrightStrategy: Extraction error for " + url + ": " + e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            MyLogger.err("JobPlaywrightStrategy: Interrupted while waiting for lock: " + e.getMessage());
             return new ArrayList<>();
+        } finally {
+            playwrightSemaphore.release();
         }
     }
 
