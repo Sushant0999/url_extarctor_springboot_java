@@ -1,4 +1,4 @@
-const API_KEY = '6324b87095ed001f550a46bf53eac0225460b8e42bfa4e8e135e13ad542e749d'.trim();
+const API_KEY = (import.meta.env.VITE_LOCATION_API_KEY || '6324b87095ed001f550a46bf53eac0225460b8e42bfa4e8e135e13ad542e749d').trim();
 const BASE_URL = 'https://api.countrystatecity.in/v1';
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
