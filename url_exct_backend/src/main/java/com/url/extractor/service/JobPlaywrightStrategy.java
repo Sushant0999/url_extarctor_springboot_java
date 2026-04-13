@@ -38,22 +38,29 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
             // Playwright objects are NOT thread-safe. We must create a new instance per thread
             // to support parallel searching from the frontend without "__adopt__" errors.
             try (Playwright playwright = Playwright.create();
-                 Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
+                 Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                    .setHeadless(true)
+                    .setChannel("chrome") // Enforce real browser TLS signatures
+                    .setArgs(List.of("--disable-blink-features=AutomationControlled"))
+                 );
                  BrowserContext context = browser.newContext(new Browser.NewContextOptions()
                     .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
                     .setViewportSize(1920, 1080)
                  );
                  Page page = context.newPage()) {
 
+                // Bypass basic bot detection (e.g. Akamai, Cloudflare) usually affecting Naukri & LinkedIn
+                page.addInitScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
+
                 page.setExtraHTTPHeaders(Map.of(
                     "Accept-Language", "en-US,en;q=0.9",
                     "Referer", "https://www.google.com/"
                 ));
 
-                page.navigate(url, new Page.NavigateOptions().setTimeout(60000).setWaitUntil(com.microsoft.playwright.options.WaitUntilState.DOMCONTENTLOADED));
+                page.navigate(url, new Page.NavigateOptions().setTimeout(25000).setWaitUntil(com.microsoft.playwright.options.WaitUntilState.DOMCONTENTLOADED));
                 
                 // Allow some time for Dynamic data to fully load
-                page.waitForTimeout(6000);
+                page.waitForTimeout(4000);
 
                 if (url.contains("linkedin.com")) {
                     return extractFromLinkedIn(page);
@@ -96,7 +103,14 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
         try {
             // Naukri uses article.jobTuple or .cust-job-tuple
             Locator cards = page.locator("article.jobTuple, .cust-job-tuple, [class*='jobTuple']");
+            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000)); } catch (Exception ignored) {}
+            
             int count = cards.count();
+            if (count == 0) {
+                try {
+                    java.nio.file.Files.writeString(java.nio.file.Paths.get("debug_naukri.html"), page.innerHTML("body"));
+                } catch (Exception e) {}
+            }
             MyLogger.info("JobPlaywrightStrategy: Found " + count + " Naukri job cards.");
 
             for (int i = 0; i < count; i++) {
@@ -127,16 +141,26 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
     private List<JobDto> extractFromCutshort(Page page) {
         List<JobDto> jobs = new ArrayList<>();
         try {
-            // Cutshort cards often change; using multiple common patterns
-            Locator cards = page.locator("[data-testid='job-listing-card'], .job-listing-card, .job-card-wrapper, .job-card");
+            // Cutshort recently obfuscated their entire DOM with styled-components hashes.
+            // Using a structural XPath to identify the closest bounding box around an anchor link to /job/ and /company/
+            Locator cards = page.locator("xpath=//a[contains(@href, '/job/')]/ancestor::div[a[contains(@href, '/company/')]][1]");
+            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000)); } catch (Exception ignored) {}
+            
             int count = cards.count();
+            if (count == 0) {
+                try {
+                    java.nio.file.Files.writeString(java.nio.file.Paths.get("debug_cutshort.html"), page.innerHTML("body"));
+                } catch (Exception e) {}
+            }
             MyLogger.info("JobPlaywrightStrategy: Found " + count + " Cutshort job cards.");
 
             for (int i = 0; i < count; i++) {
                 Locator card = cards.nth(i);
                 try {
-                    String title = card.locator(".job-title, [class*='jobTitle']").innerText().trim();
-                    String company = card.locator(".company-name, [class*='companyName']").innerText().trim();
+                    // Title is inside the inner a[href*='/job/'] element
+                    String title = card.locator("a[href*='/job/']").first().innerText().trim();
+                    // Company is generally prefixed with "at " or inside the company link
+                    String company = card.locator("a[href*='/company/']").first().innerText().trim();
                     String link = card.locator("a").first().getAttribute("href");
                     if (link != null && !link.startsWith("http")) link = "https://cutshort.io" + link;
 
@@ -158,6 +182,8 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
         List<JobDto> jobs = new ArrayList<>();
         try {
             Locator cards = page.locator(".srpResultCard, [class*='srpResultCard']");
+            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000)); } catch (Exception ignored) {}
+            
             int count = cards.count();
             MyLogger.info("JobPlaywrightStrategy: Found " + count + " Foundit job cards.");
 
@@ -189,6 +215,8 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
         List<JobDto> jobs = new ArrayList<>();
         try {
             Locator cards = page.locator(".container-fluid.individual_internship");
+            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000)); } catch (Exception ignored) {}
+            
             int count = cards.count();
             MyLogger.info("JobPlaywrightStrategy: Found " + count + " Internshala internship cards.");
 
@@ -221,6 +249,8 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
         try {
             // Shine uses .jobCard as each listing card
             Locator cards = page.locator(".jobCard, [class*='jobCard']:not([class*='jobCardSkeleton'])");
+            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000)); } catch (Exception ignored) {}
+            
             int count = cards.count();
             MyLogger.info("JobPlaywrightStrategy: Found " + count + " Shine job cards.");
 
@@ -274,6 +304,8 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
         List<JobDto> jobs = new ArrayList<>();
         try {
             Locator cards = page.locator(".job-card, .job-item, [class*='jobCard']");
+            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000)); } catch (Exception ignored) {}
+            
             int count = cards.count();
             MyLogger.info("JobPlaywrightStrategy: Found " + count + " Hirist job cards.");
 
@@ -304,7 +336,14 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
         try {
             // LinkedIn public cards often use .base-card or similar
             Locator cards = page.locator(".base-card, .base-search-card, .job-search-card, [data-entity-urn^='urn:li:jobPost']");
+            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000)); } catch (Exception ignored) {}
+            
             int count = cards.count();
+            if (count == 0) {
+                try {
+                    java.nio.file.Files.writeString(java.nio.file.Paths.get("debug_linkedin.html"), page.innerHTML("body"));
+                } catch (Exception e) {}
+            }
             MyLogger.info("JobPlaywrightStrategy: Found " + count + " LinkedIn job cards.");
 
             for (int i = 0; i < count; i++) {
@@ -375,6 +414,8 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
         List<JobDto> jobs = new ArrayList<>();
         try {
             Locator cards = page.locator(".job_seen_beacon");
+            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000)); } catch (Exception ignored) {}
+            
             int count = cards.count();
 
             for (int i = 0; i < count; i++) {

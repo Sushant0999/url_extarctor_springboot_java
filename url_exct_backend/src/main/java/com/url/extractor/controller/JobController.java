@@ -26,9 +26,45 @@ public class JobController {
     // Simple in-memory cache for job results to enhance performance as requested
     private final Map<String, List<JobDto>> jobCache = new ConcurrentHashMap<>();
 
+    // Original fallback endpoint
     @PostMapping("/search")
-    @Operation(summary = "Search for jobs", description = "Scrapes job listings from Indeed based on provided filters (query, location, skills, etc.).")
+    @Operation(summary = "Search for jobs", description = "Fallback search endpoint across selected platforms in filter.")
     public ResponseEntity<List<JobDto>> searchJobs(@RequestBody JobSearchFilter filter) {
+        return processSearchRequest(filter);
+    }
+
+    // Explicit Mappings as Requested
+    @PostMapping("/search/indeed")
+    public ResponseEntity<List<JobDto>> searchIndeed(@RequestBody JobSearchFilter filter) { return searchSpecificPlatform("indeed", filter); }
+
+    @PostMapping("/search/linkedin")
+    public ResponseEntity<List<JobDto>> searchLinkedin(@RequestBody JobSearchFilter filter) { return searchSpecificPlatform("linkedin", filter); }
+
+    @PostMapping("/search/naukri")
+    public ResponseEntity<List<JobDto>> searchNaukri(@RequestBody JobSearchFilter filter) { return searchSpecificPlatform("naukri", filter); }
+
+    @PostMapping("/search/cutshort")
+    public ResponseEntity<List<JobDto>> searchCutshort(@RequestBody JobSearchFilter filter) { return searchSpecificPlatform("cutshort", filter); }
+
+    @PostMapping("/search/foundit")
+    public ResponseEntity<List<JobDto>> searchFoundit(@RequestBody JobSearchFilter filter) { return searchSpecificPlatform("foundit", filter); }
+
+    @PostMapping("/search/internshala")
+    public ResponseEntity<List<JobDto>> searchInternshala(@RequestBody JobSearchFilter filter) { return searchSpecificPlatform("internshala", filter); }
+
+    @PostMapping("/search/shine")
+    public ResponseEntity<List<JobDto>> searchShine(@RequestBody JobSearchFilter filter) { return searchSpecificPlatform("shine", filter); }
+
+    @PostMapping("/search/hirist")
+    public ResponseEntity<List<JobDto>> searchHirist(@RequestBody JobSearchFilter filter) { return searchSpecificPlatform("hirist", filter); }
+
+    private ResponseEntity<List<JobDto>> searchSpecificPlatform(String platform, JobSearchFilter filter) {
+        MyLogger.info("JobController: Direct API Call to Specific Platform Backend -> " + platform.toUpperCase());
+        filter.setPlatforms(List.of(platform)); // Force the array securely
+        return processSearchRequest(filter);
+    }
+
+    private ResponseEntity<List<JobDto>> processSearchRequest(JobSearchFilter filter) {
         String cacheKey = generateCacheKey(filter);
         
         if (jobCache.containsKey(cacheKey)) {

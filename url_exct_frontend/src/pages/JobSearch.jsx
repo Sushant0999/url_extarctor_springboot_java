@@ -249,6 +249,10 @@ export default function JobSearch() {
 
             try {
                 const platformFilters = { ...filters, platforms: [platform], page: page };
+                
+                // Enforce maximum 7 skills participating in the backend search query
+                platformFilters.skills = platformFilters.skills.slice(0, 7);
+                
                 const data = await searchJobs(platformFilters, { signal: controller.signal });
                 clearTimeout(timeoutId);
 
@@ -387,10 +391,6 @@ export default function JobSearch() {
 
     const addSkill = () => {
         if (skillInput.trim()) {
-            if (filters.skills.length >= 7) {
-                setError("Maximum 7 skills allowed to maintain search accuracy");
-                return;
-            }
             if (!filters.skills.includes(skillInput.trim())) {
                 setFilters(prev => ({ ...prev, skills: [...prev.skills, skillInput.trim()] }));
             }
@@ -704,11 +704,10 @@ export default function JobSearch() {
                                     <BiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-400 transition-colors" />
                                     <input 
                                         type="text" 
-                                        placeholder="e.g. Software Engineer"
+                                        placeholder="e.g. Software Engineer (Optional)"
                                         className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-11 pr-4 text-white focus:outline-none focus:border-indigo-500/50 transition-all font-[500]"
                                         value={filters.query}
                                         onChange={(e) => setFilters(prev => ({ ...prev, query: e.target.value }))}
-                                        required
                                     />
                                 </div>
                             </div>
@@ -970,13 +969,17 @@ export default function JobSearch() {
                                 <label className="text-xs font-[700] uppercase tracking-wider text-gray-400 ml-1">Required Skills</label>
                                 <div className="flex flex-wrap gap-2 mb-3">
                                     <AnimatePresence>
-                                        {filters.skills.map(skill => (
+                                        {filters.skills.map((skill, index) => (
                                             <motion.span 
                                                 key={skill}
                                                 initial={{ opacity: 0, scale: 0.8 }}
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 exit={{ opacity: 0, scale: 0.8 }}
-                                                className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-[600] flex items-center gap-2 border border-indigo-500/30"
+                                                className={index < 7 
+                                                    ? "bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-[600] flex items-center gap-2 border border-indigo-500/30"
+                                                    : "bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full text-xs font-[600] flex items-center gap-2 border border-orange-500/30"
+                                                }
+                                                title={index >= 7 ? "Skill limit reached: Will not participate in search" : "Active core skill"}
                                             >
                                                 {skill}
                                                 <button type="button" onClick={() => removeSkill(skill)} className="hover:text-white">×</button>
@@ -1134,10 +1137,22 @@ export default function JobSearch() {
 
                                 <div>
                                     <div className="flex justify-between items-start mb-4">
-                                        <div className="bg-indigo-500/10 p-2 rounded-xl border border-indigo-500/20">
-                                            <BiBriefcase className="text-indigo-400 w-5 h-5" />
+                                        <div className="flex items-center gap-2">
+                                            <div className="bg-indigo-500/10 p-2 rounded-xl border border-indigo-500/20 flex-shrink-0">
+                                                <BiBriefcase className="text-indigo-400 w-5 h-5" />
+                                            </div>
+                                            {(() => {
+                                                const loc = (job.location || '').toLowerCase();
+                                                const tit = (job.title || '').toLowerCase();
+                                                const isRemote = loc.includes('remote') || tit.includes('remote');
+                                                const isHybrid = loc.includes('hybrid') || tit.includes('hybrid');
+                                                
+                                                if (isRemote) return <span className="text-[10px] font-[800] uppercase tracking-widest text-blue-400 bg-blue-400/10 px-2 py-1 rounded-md border border-blue-400/20">Remote</span>;
+                                                if (isHybrid) return <span className="text-[10px] font-[800] uppercase tracking-widest text-purple-400 bg-purple-400/10 px-2 py-1 rounded-md border border-purple-400/20">Hybrid</span>;
+                                                return <span className="text-[10px] font-[800] uppercase tracking-widest text-gray-400 bg-gray-400/10 px-2 py-1 rounded-md border border-gray-400/20">On-site</span>;
+                                            })()}
                                         </div>
-                                        <span className="text-[10px] font-[800] uppercase tracking-widest text-[#10b981] bg-[#10b981]/10 px-3 py-1 rounded-full border border-[#10b981]/20">
+                                        <span className="text-[10px] font-[800] uppercase tracking-widest flex-shrink-0 text-[#10b981] bg-[#10b981]/10 px-3 py-1 rounded-full border border-[#10b981]/20">
                                             {job.source}
                                         </span>
                                     </div>

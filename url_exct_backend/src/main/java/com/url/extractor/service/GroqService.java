@@ -38,9 +38,9 @@ public class GroqService {
             var systemMessage = Map.of(
                 "role", "system",
                 "content", "You are a professional resume parser. Extract the following from the resume text: " +
-                           "1. jobTitle (Extract a clean job title. If terms like 'Fresher', 'Junior', 'Intern', 'Student' are present, include them or infer them) " +
+                           "1. jobTitle (Extract a clean job title strictly based on their MOST RECENT or CURRENT experience. If terms like 'Fresher', 'Junior', 'Intern', 'Student' are present, include them or infer them) " +
                            "2. skills (List of technical or professional skills) " +
-                           "3. experienceLevel (One of: entry_level, mid_level, senior_level. Map 'Fresher', 'Entry', 'Junior' to 'entry_level') " +
+                           "3. experienceLevel (One of: entry_level, mid_level, senior_level. If total experience is 1-3 years or titles contain 'Junior' or 'Associate', return 'entry_level'. If total experience is 3-5 years or titles contain 'Intermediate', return 'mid_level'. If experience is 5+ years or titles contain 'Senior', return 'senior_level') " +
                            "4. location (Extract the State or Province if mentioned) " +
                            "Return ONLY a clean JSON object. Example: {\"jobTitle\": \"Java Developer (Fresher)\", \"skills\": [\"Spring\", \"React\"], \"experienceLevel\": \"entry_level\", \"location\": \"Maharashtra\"}"
             );

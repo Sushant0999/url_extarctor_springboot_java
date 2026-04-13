@@ -31,6 +31,8 @@ public class JobScraperService {
             platforms = List.of("indeed");
         }
 
+
+
         MyLogger.info("JobScraperService: Starting parallel search across platforms: " + platforms);
 
         // Using CompletableFuture for internal backend threading
@@ -60,13 +62,104 @@ public class JobScraperService {
             }))
             .toList();
 
-        // Wait for all platforms to finish and collect results
+        // Wait for all platforms to finish and collect results safely
         List<JobDto> allResults = futures.stream()
-            .map(f -> (List<JobDto>) f.join())
+            .map(f -> {
+                try {
+                    return (List<JobDto>) f.join();
+                } catch (Exception e) {
+                    MyLogger.err("JobScraperService: A platform thread crashed during execution: " + e.getMessage());
+                    return new ArrayList<JobDto>();
+                }
+            })
             .flatMap(java.util.List::stream)
             .collect(java.util.stream.Collectors.toList());
 
-        return deduplicate(allResults);
+        // Filter out completely irrelevant algorithmic garbage (e.g., Sponsored jobs from different industries)
+        List<JobDto> relevantJobs = filterIrrelevantJobs(allResults, filter);
+
+        return deduplicate(relevantJobs);
+    }
+
+    private List<JobDto> filterIrrelevantJobs(List<JobDto> jobs, JobSearchFilter filter) {
+        String query = filter.getQuery() != null ? filter.getQuery().toLowerCase() : "";
+        List<String> skills = filter.getSkills() != null ? filter.getSkills().stream().map(String::toLowerCase).toList() : new ArrayList<>();
+        String expLevel = filter.getExperienceLevel() != null ? filter.getExperienceLevel().toLowerCase() : "";
+        
+        if (query.isEmpty() && skills.isEmpty() && expLevel.isEmpty()) return jobs;
+
+        List<String> matchTokens = new ArrayList<>();
+        for (String w : query.split("[^a-z0-9]+")) {
+            if (w.length() > 2) matchTokens.add(w); 
+        }
+        for (String s : skills) {
+             for (String w : s.split("[^a-z0-9]+")) {
+                 if (w.length() > 2) matchTokens.add(w);
+             }
+        }
+
+        return jobs.stream().filter(job -> {
+            String title = job.getTitle() != null ? job.getTitle().toLowerCase() : "";
+            String location = job.getLocation() != null ? job.getLocation().toLowerCase() : "";
+            String iso = filter.getCountry() != null ? filter.getCountry().toLowerCase() : "in";
+
+            // 1. Geographic Platform Guard
+            if (!iso.equals("in") && !iso.equals("india")) {
+                if (location.contains("india") || location.contains("chennai") || location.contains("mumbai") ||
+                    location.contains("pune") || location.contains("delhi") || location.contains("noida") ||
+                    location.contains("gurugram") || location.contains("gurgaon") || location.contains("bengaluru") ||
+                    location.contains("bangalore") || location.contains("hyderabad") || location.contains("kochi") ||
+                    location.contains("kolkata") || location.contains("ahmedabad") || location.contains("chandigarh")) {
+                    MyLogger.info("JobScraperService: Dropped hallucinated Indian job for foreign query -> " + job.getTitle());
+                    return false;
+                }
+            }
+            
+            // 2. Experience Level Strict Clamping
+            if (expLevel.equals("entry_level")) {
+                if (title.contains("senior") || title.matches(".*\\bsr\\.?\\b.*") || title.contains("lead") || title.contains("architect") || title.contains("principal") || title.contains("manager") || title.contains("mid")) {
+                    MyLogger.info("JobScraperService: Dropped incompatible Senior/Mid role for Entry Level search -> " + job.getTitle());
+                    return false;
+                }
+            } else if (expLevel.equals("mid_level")) {
+                if (title.contains("senior") || title.matches(".*\\bsr\\.?\\b.*") || title.contains("architect") || title.contains("principal") || title.contains("intern") || title.contains("fresher") || title.contains("trainee") || title.contains("student")) {
+                    MyLogger.info("JobScraperService: Dropped incompatible level role for Mid Level search -> " + job.getTitle());
+                    return false;
+                }
+            } else if (expLevel.equals("senior_level")) {
+                if (title.contains("intern") || title.contains("fresher") || title.contains("trainee") || title.contains("junior") || title.matches(".*\\bjr\\.?\\b.*")) {
+                    MyLogger.info("JobScraperService: Dropped incompatible Junior role for Senior Level search -> " + job.getTitle());
+                    return false;
+                }
+            }
+
+            // 3. Negative Hierarchy Match (Unrequested Manager/VP roles)
+            if ((title.contains("manager") && !matchTokens.contains("manager")) ||
+                (title.contains("director") && !matchTokens.contains("director")) ||
+                (title.contains("vp ") && !matchTokens.contains("vp")) ||
+                (title.contains("head of ") && !matchTokens.contains("head"))) {
+                MyLogger.info("JobScraperService: Dropped unrequested hierarchy jump -> " + job.getTitle());
+                return false;
+            }
+
+            // If we have no query tokens to match, but we passed all negative filters, we survived.
+            if (matchTokens.isEmpty()) return true;
+            
+            // 4. Positive Token Relevance Check
+            for (String token : matchTokens) {
+                if (title.contains(token)) return true;
+            }
+            
+            // Allow synonymous cross-matching common in tech
+            if ((matchTokens.contains("developer") && title.contains("engineer")) || 
+                (matchTokens.contains("engineer") && title.contains("developer")) ||
+                (matchTokens.contains("software") && (title.contains("programmer") || title.contains("coder")))) {
+                return true;
+            }
+            
+            MyLogger.info("JobScraperService: Dropped completely irrelevant job -> " + job.getTitle());
+            return false;
+        }).collect(java.util.stream.Collectors.toList());
     }
 
     private List<JobDto> deduplicate(List<JobDto> jobs) {
@@ -79,9 +172,12 @@ public class JobScraperService {
 
             if (uniqueJobs.containsKey(key)) {
                 JobDto existing = uniqueJobs.get(key);
-                // Merge sources if not already present
-                if (!existing.getSource().toLowerCase().contains(job.getSource().toLowerCase())) {
-                    existing.setSource(existing.getSource() + ", " + job.getSource());
+                // Merge sources if not already present, safely handling null sources
+                String currentSource = existing.getSource() != null ? existing.getSource() : "";
+                String newSource = job.getSource() != null ? job.getSource() : "Unknown";
+                
+                if (!currentSource.toLowerCase().contains(newSource.toLowerCase())) {
+                    existing.setSource(currentSource.isEmpty() ? newSource : currentSource + ", " + newSource);
                 }
                 // Keep the better link (e.g. LinkedIn over others if possible, or just keep first)
                 if (existing.getLink() == null) existing.setLink(job.getLink());

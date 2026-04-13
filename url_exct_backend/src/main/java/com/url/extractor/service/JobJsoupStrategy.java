@@ -21,6 +21,11 @@ public class JobJsoupStrategy implements JobExtractionStrategy {
 
     @Override
     public List<JobDto> extract(String url) {
+        if (!url.toLowerCase().contains("indeed.com")) {
+            // Early bypass: Jsoup strategy is currently only coded for Indeed DOM structures
+            return new ArrayList<>();
+        }
+        
         List<JobDto> jobs = new ArrayList<>();
         try {
             MyLogger.info("JobJsoupStrategy: Fetching URL: " + url);

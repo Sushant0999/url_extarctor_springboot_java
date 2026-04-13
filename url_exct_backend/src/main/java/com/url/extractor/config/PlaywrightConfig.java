@@ -43,8 +43,8 @@ public class PlaywrightConfig {
             }
             return finalConcurrency;
             
-        } catch (Exception e) {
-            MyLogger.warn("Hardware Check: Could not accurately determine memory, defaulting to strict 1 browser limit");
+        } catch (Throwable e) {
+            MyLogger.warn("Hardware Check: Could not accurately determine memory, defaulting to strict 1 browser limit. Reason: " + e.getMessage());
             return 1;
         }
     }
