@@ -147,17 +147,21 @@ public class JobScraperService {
             
             // 4. Positive Token Relevance Check
             for (String token : matchTokens) {
-                if (title.contains(token)) return true;
+                if (title.contains(token)) {
+                    MyLogger.info("JobScraperService: Accepted job (token match) -> " + job.getTitle());
+                    return true;
+                }
             }
             
             // Allow synonymous cross-matching common in tech
             if ((matchTokens.contains("developer") && title.contains("engineer")) || 
                 (matchTokens.contains("engineer") && title.contains("developer")) ||
                 (matchTokens.contains("software") && (title.contains("programmer") || title.contains("coder")))) {
+                MyLogger.info("JobScraperService: Accepted job (synonym match) -> " + job.getTitle());
                 return true;
             }
             
-            MyLogger.info("JobScraperService: Dropped completely irrelevant job -> " + job.getTitle());
+            MyLogger.info("JobScraperService: Dropped irrelevant job (no token match) -> " + job.getTitle());
             return false;
         }).collect(java.util.stream.Collectors.toList());
     }

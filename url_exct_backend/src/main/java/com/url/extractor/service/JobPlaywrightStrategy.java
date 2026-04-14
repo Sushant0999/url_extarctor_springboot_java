@@ -57,10 +57,14 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
                     "Referer", "https://www.google.com/"
                 ));
 
-                page.navigate(url, new Page.NavigateOptions().setTimeout(25000).setWaitUntil(com.microsoft.playwright.options.WaitUntilState.DOMCONTENTLOADED));
+                page.navigate(url, new Page.NavigateOptions().setTimeout(60000).setWaitUntil(com.microsoft.playwright.options.WaitUntilState.LOAD));
                 
-                // Allow some time for Dynamic data to fully load
-                page.waitForTimeout(4000);
+                // Extra delay to simulate human focus
+                randomDelay(1000, 2000);
+                
+                // Auto-scroll to trigger lazy loading (crucial for LinkedIn & Indeed)
+                autoScroll(page);
+                randomDelay(1000, 2000);
 
                 if (url.contains("linkedin.com")) {
                     return extractFromLinkedIn(page);
@@ -437,6 +441,37 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
             }
         } catch (Exception ignored) {}
         return jobs;
+    }
+
+    private void autoScroll(Page page) {
+        try {
+            page.evaluate("async () => {" +
+                "  await new Promise((resolve) => {" +
+                "    let totalHeight = 0;" +
+                "    let distance = 100;" +
+                "    let timer = setInterval(() => {" +
+                "      let scrollHeight = document.body.scrollHeight;" +
+                "      window.scrollBy(0, distance);" +
+                "      totalHeight += distance;" +
+                "      if(totalHeight >= scrollHeight || totalHeight > 3000){" +
+                "        clearInterval(timer);" +
+                "        resolve();" +
+                "      }" +
+                "    }, 100);" +
+                "  });" +
+                "}");
+        } catch (Exception e) {
+            MyLogger.warn("JobPlaywrightStrategy: Auto-scroll failed: " + e.getMessage());
+        }
+    }
+
+    private void randomDelay(int min, int max) {
+        try {
+            int delay = min + (int) (Math.random() * (max - min));
+            Thread.sleep(delay);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override

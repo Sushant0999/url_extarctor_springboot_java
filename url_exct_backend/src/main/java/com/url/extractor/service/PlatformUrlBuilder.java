@@ -21,71 +21,54 @@ public class PlatformUrlBuilder {
         if (p.contains("hirist")) return buildHiristUrl(filter);
         return buildIndeedUrl(filter);
     }
-
+    
     private String buildShineUrl(JobSearchFilter filter) {
-        String query = filter.getQuery() != null ? filter.getQuery().trim() : "";
-        if (filter.getSkills() != null && !filter.getSkills().isEmpty()) {
-            query += " " + String.join(" ", filter.getSkills());
-        }
-
-        // Slug: lowercase, words joined with hyphens (no URL encoding, Shine uses plain hyphens)
-        String slug = query.toLowerCase().replaceAll("[^a-z0-9\\s]", "").trim().replaceAll("\\s+", "-");
-
-        // qActual: words joined with + (URL-encoded space equivalent for Shine)
-        String qActual = query.toLowerCase().replaceAll("[^a-z0-9\\s]", "").trim().replaceAll("\\s+", "+");
-
-        // Page suffix: page 1 = no suffix, page 2+ = -2, -3...
-        String pageSuffix = "";
-        if (filter.getPage() != null && filter.getPage() > 1) {
-            pageSuffix = "-" + filter.getPage();
-        }
-
-        String url = "https://www.shine.com/job-search/" + slug + "-jobs" + pageSuffix
-                + "?q=" + slug
-                + "&qActual=" + qActual;
-
-        String location = "";
-        if (filter.getLocations() != null && !filter.getLocations().isEmpty()) {
-            location = filter.getLocations().get(0).toLowerCase().replaceAll("\\s+", "-");
-        } else if (filter.getCountry() != null && !filter.getCountry().isEmpty()) {
-            location = getFullCountryName(filter.getCountry()).toLowerCase().replaceAll("\\s+", "-");
-        }
-
-        if (!location.isEmpty() && !location.equals("india")) {
-            url += "&loc=" + location;
-        }
-
-        return url;
-    }
-
-    private String buildHiristUrl(JobSearchFilter filter) {
-        String query = filter.getQuery() != null ? filter.getQuery() : "";
-        if (filter.getSkills() != null && !filter.getSkills().isEmpty()) {
-            query += " " + String.join(" ", filter.getSkills());
-        }
-        String encodedQuery = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8);
-        String url = "https://www.hirist.com/search/" + encodedQuery;
-        if (filter.getPage() != null && filter.getPage() > 1) {
-            url += "?page=" + filter.getPage();
-        }
-        return url;
-    }
-
-    private String buildFounditUrl(JobSearchFilter filter) {
-        String query = filter.getQuery() != null ? filter.getQuery() : "";
-        if (filter.getSkills() != null && !filter.getSkills().isEmpty()) {
-            query += " " + String.join(" ", filter.getSkills());
-        }
-        StringBuilder url = new StringBuilder("https://www.foundit.in/srp/results?query=").append(query);
+        String optimized = getOptimizedQuery(filter, 3);
+        String url = "https://www.shine.com/job-search/jobs?q=" + URLEncoder.encode(optimized, StandardCharsets.UTF_8);
         String location = "";
         if (filter.getLocations() != null && !filter.getLocations().isEmpty()) {
             location = filter.getLocations().get(0);
         } else if (filter.getCountry() != null && !filter.getCountry().isEmpty()) {
             location = getFullCountryName(filter.getCountry());
         }
-
         if (!location.isEmpty()) {
-            url.append("&locations=").append(URLEncoder.encode(location, StandardCharsets.UTF_8));
+            url += "&loc=" + URLEncoder.encode(location, StandardCharsets.UTF_8);
+        }
+        url += "&sort=1"; // Sort by freshness
+        return url;
+    }
+
+    private String buildHiristUrl(JobSearchFilter filter) {
+        String query = getOptimizedQuery(filter, 3);
+        String encodedQuery = URLEncoder.encode(query.toLowerCase().replace(" ", "-"), StandardCharsets.UTF_8);
+        StringBuilder url = new StringBuilder("https://www.hirist.tech/search/").append(encodedQuery).append("-jobs");
+        
+        String location = "";
+        if (filter.getLocations() != null && !filter.getLocations().isEmpty()) {
+            location = filter.getLocations().get(0);
+        }
+        
+        if (!location.isEmpty()) {
+            url.append("?loc=").append(URLEncoder.encode(location, StandardCharsets.UTF_8));
+        }
+        
+        if (filter.getDatePosted() != null) {
+            url.append(url.toString().contains("?") ? "&" : "?").append("posting=").append(filter.getDatePosted());
+        }
+        
+        return url.toString();
+    }
+
+    private String buildFounditUrl(JobSearchFilter filter) {
+        String query = getOptimizedQuery(filter, 3);
+        StringBuilder url = new StringBuilder("https://www.foundit.in/srp/results?query=").append(URLEncoder.encode(query, StandardCharsets.UTF_8));
+        
+        if (filter.getLocations() != null && !filter.getLocations().isEmpty()) {
+            url.append("&locations=").append(URLEncoder.encode(filter.getLocations().get(0), StandardCharsets.UTF_8));
+        }
+
+        if (filter.getDatePosted() != null) {
+            url.append("&jobFreshness=").append(filter.getDatePosted());
         }
         
         if (filter.getPage() != null && filter.getPage() > 1) {
@@ -135,12 +118,21 @@ public class PlatformUrlBuilder {
         }
 
         // Naukri semantic URL: naukri.com/java-developer-jobs or ...-jobs-in-bangalore
+        String optimized = getOptimizedQuery(filter, 3);
         StringBuilder url = new StringBuilder("https://www.naukri.com/")
-                .append(encodedQuery.toLowerCase())
+                .append(URLEncoder.encode(optimized.toLowerCase().replace(" ", "-"), StandardCharsets.UTF_8))
                 .append("-jobs");
                 
-        if (!location.isEmpty()) {
-            url.append("-in-").append(location);
+        if (!location.isEmpty() && location.length() < 50) {
+            url.append("-in-").append(URLEncoder.encode(location.toLowerCase().replace(" ", "-"), StandardCharsets.UTF_8));
+        }
+
+        // Add robust query parameters
+        url.append("?k=").append(URLEncoder.encode(optimized, StandardCharsets.UTF_8));
+        if (!location.isEmpty()) url.append("&l=").append(URLEncoder.encode(location, StandardCharsets.UTF_8));
+
+        if (filter.getDatePosted() != null) {
+            url.append("&jobAge=").append(filter.getDatePosted());
         }
 
         // Handle Experience (?experience=3)
@@ -171,27 +163,16 @@ public class PlatformUrlBuilder {
     }
 
     private String buildCutshortUrl(JobSearchFilter filter) {
-        String query = filter.getQuery() != null ? filter.getQuery() : "";
-        if (filter.getSkills() != null && !filter.getSkills().isEmpty()) {
-            query += " " + String.join(" ", filter.getSkills());
-        }
-        String encodedQuery = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8);
+        String query = getOptimizedQuery(filter, 3);
+        StringBuilder url = new StringBuilder("https://cutshort.io/search-jobs")
+                .append("?free_text=").append(URLEncoder.encode(query, StandardCharsets.UTF_8));
         
-        StringBuilder url = new StringBuilder("https://cutshort.io/jobs")
-                .append("?search=").append(encodedQuery);
-        
-        String location = "";
         if (filter.getLocations() != null && !filter.getLocations().isEmpty()) {
-            location = filter.getLocations().get(0);
-        } else if (filter.getCountry() != null && !filter.getCountry().isEmpty()) {
-            String country = getFullCountryName(filter.getCountry());
-            if (!country.equalsIgnoreCase("India")) {
-                location = country;
-            }
+            url.append("&locations=").append(URLEncoder.encode(filter.getLocations().get(0), StandardCharsets.UTF_8));
         }
 
-        if (!location.isEmpty()) {
-            url.append("&locations=").append(URLEncoder.encode(location, StandardCharsets.UTF_8));
+        if (filter.getDatePosted() != null) {
+            url.append("&posted_within=").append(filter.getDatePosted());
         }
 
         return url.toString();
@@ -212,16 +193,12 @@ public class PlatformUrlBuilder {
     }
 
     private String buildLinkedInUrl(JobSearchFilter filter) {
-        StringBuilder query = new StringBuilder(filter.getQuery() != null ? filter.getQuery() : "");
-        
-        if (filter.getSkills() != null && !filter.getSkills().isEmpty()) {
-            query.append(" ").append(String.join(" ", filter.getSkills()));
-        }
+        String query = getOptimizedQuery(filter, 3);
 
         String baseUrl = "https://www.linkedin.com/jobs/search";
         StringBuilder url = new StringBuilder(baseUrl)
                 .append("?keywords=")
-                .append(URLEncoder.encode(query.toString().trim(), StandardCharsets.UTF_8));
+                .append(URLEncoder.encode(query, StandardCharsets.UTF_8));
 
         List<String> locations = filter.getLocations();
         if (locations != null && !locations.isEmpty()) {
@@ -240,9 +217,29 @@ public class PlatformUrlBuilder {
 
         if (filter.getExperienceLevel() != null) {
             String exp = filter.getExperienceLevel().toLowerCase();
-            if (exp.contains("entry")) url.append("&f_E=2");
+            if (exp.contains("intern")) url.append("&f_E=1");
+            else if (exp.contains("entry")) url.append("&f_E=2");
             else if (exp.contains("mid")) url.append("&f_E=3");
             else if (exp.contains("senior")) url.append("&f_E=4");
+        }
+
+        if (filter.getWorkMode() != null) {
+            String mode = filter.getWorkMode().toLowerCase();
+            if (mode.contains("onsite")) url.append("&f_WT=1");
+            else if (mode.contains("remote")) url.append("&f_WT=2");
+            else if (mode.contains("hybrid")) url.append("&f_WT=3");
+        }
+
+        if (filter.getJobType() != null) {
+            String jt = filter.getJobType().toLowerCase();
+            if (jt.contains("full")) url.append("&f_JT=F");
+            else if (jt.contains("contract")) url.append("&f_JT=C");
+            else if (jt.contains("part")) url.append("&f_JT=P");
+            else if (jt.contains("intern")) url.append("&f_JT=I");
+        }
+
+        if (filter.getDistance() != null) {
+            url.append("&distance=").append(filter.getDistance());
         }
 
         if (filter.getPage() != null && filter.getPage() > 1) {
@@ -254,12 +251,8 @@ public class PlatformUrlBuilder {
     }
 
     private String buildIndeedUrl(JobSearchFilter filter) {
-        StringBuilder query = new StringBuilder(filter.getQuery() != null ? filter.getQuery() : "");
-
-        if (filter.getSkills() != null && !filter.getSkills().isEmpty()) {
-            java.util.List<String> topSkills = filter.getSkills().stream().limit(7).toList();
-            query.append(" ").append(String.join(" ", topSkills));
-        }
+        String optimizedQuery = getOptimizedQuery(filter, 5);
+        StringBuilder query = new StringBuilder(optimizedQuery);
 
         if (filter.getAdditionalKeywords() != null && !filter.getAdditionalKeywords().isEmpty()) {
             query.append(" ").append(filter.getAdditionalKeywords());
@@ -338,5 +331,23 @@ public class PlatformUrlBuilder {
         }
 
         return url.toString();
+    }
+
+    private String getOptimizedQuery(JobSearchFilter filter, int skillLimit) {
+        StringBuilder sb = new StringBuilder(filter.getQuery() != null ? filter.getQuery().trim() : "Software Engineer");
+        
+        if (filter.getSkills() != null && !filter.getSkills().isEmpty()) {
+            List<String> uniqueSkills = filter.getSkills().stream()
+                    .filter(s -> !sb.toString().toLowerCase().contains(s.toLowerCase()))
+                    .limit(skillLimit)
+                    .toList();
+            
+            if (!uniqueSkills.isEmpty()) {
+                sb.append(" ").append(String.join(" ", uniqueSkills));
+            }
+        }
+        
+        // Remove excessive special characters that break semantic URLs
+        return sb.toString().replaceAll("[^a-zA-Z0-9\\s+#\\.]", "").replaceAll("\\s+", " ").trim();
     }
 }

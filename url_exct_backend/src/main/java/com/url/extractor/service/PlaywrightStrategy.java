@@ -8,34 +8,55 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 import com.url.extractor.utils.MyLogger;
 
 @Service
 public class PlaywrightStrategy implements ExtractionStrategy {
 
-    // Autowire the dynamic globally shared Semaphore limiting concurrency by hardware RAM
+    private static final String CHROMIUM_PATH =
+            "/root/.cache/ms-playwright/chromium-1112/chrome-linux/chrome";
+
     @Autowired
     @Qualifier("playwrightSemaphore")
     private Semaphore playwrightSemaphore;
+
+    private BrowserType.LaunchOptions buildLaunchOptions() {
+        return new BrowserType.LaunchOptions()
+                .setExecutablePath(Paths.get(CHROMIUM_PATH))
+                .setHeadless(true)
+                .setArgs(Arrays.asList(
+                        "--no-sandbox",                     // required: no user namespace on Android
+                        "--disable-setuid-sandbox",         // required: same reason
+                        "--no-zygote",                      // required: fixes descriptor lookup error
+                        "--single-process",                 // required: fixes IPC failure on Android kernel
+                        "--disable-dev-shm-usage",          // required: /dev/shm too small
+                        "--disable-gpu",                    // required: no GPU on NetHunter
+                        "--disable-extensions",
+                        "--disable-background-networking",
+                        "--disable-default-apps",
+                        "--no-first-run",
+                        "--mute-audio"
+                ));
+    }
 
     @Override
     public ExtractedData extract(String url) {
         try {
             playwrightSemaphore.acquire();
             try (Playwright playwright = Playwright.create();
-                 Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
+                 Browser browser = playwright.chromium().launch(buildLaunchOptions());
                  BrowserContext context = browser.newContext();
                  Page page = context.newPage()) {
-                
+
                 page.navigate(url);
-                // Wait for the page to load and potentially for some JS to execute
                 page.waitForLoadState(LoadState.NETWORKIDLE);
 
                 String title = page.title();
                 String content = page.innerText("body");
-                
-                // 📸 Capture Screenshot
+
                 byte[] screenshot = page.screenshot(new Page.ScreenshotOptions().setFullPage(false));
                 String screenshotBase64 = java.util.Base64.getEncoder().encodeToString(screenshot);
 
@@ -53,11 +74,11 @@ public class PlaywrightStrategy implements ExtractionStrategy {
 
                 java.util.List<String> anchorTags = page.locator("a").all().stream()
                         .map(a -> a.getAttribute("href"))
-                        .filter(href -> href != null && !href.isEmpty() && (href.startsWith("http")))
+                        .filter(href -> href != null && !href.isEmpty() && href.startsWith("http"))
                         .distinct()
                         .collect(java.util.stream.Collectors.toList());
 
-                ExtractedData data = ExtractedData.builder()
+                return ExtractedData.builder()
                         .title(title)
                         .topics(title)
                         .description("Rendered via Playwright")
@@ -70,9 +91,8 @@ public class PlaywrightStrategy implements ExtractionStrategy {
                         .success(true)
                         .build();
 
-                return data;
             } catch (Exception e) {
-                MyLogger.err("PlaywrightStrategy: " + e.getMessage());
+                MyLogger.err("PlaywrightStrategy: Extraction error for " + url + ": " + e.getMessage());
                 return ExtractedData.builder().success(false).build();
             }
         } catch (InterruptedException e) {
