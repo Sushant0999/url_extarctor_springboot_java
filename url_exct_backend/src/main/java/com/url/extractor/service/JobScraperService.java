@@ -25,6 +25,9 @@ public class JobScraperService {
     @Autowired
     private JobPlaywrightStrategy playwrightStrategy;
 
+    @Autowired
+    private JobDorkingStrategy dorkingStrategy;
+
     public List<JobDto> searchJobs(JobSearchFilter filter) {
         List<String> platforms = filter.getPlatforms();
         if (platforms == null || platforms.isEmpty()) {
@@ -36,7 +39,7 @@ public class JobScraperService {
         MyLogger.info("JobScraperService: Starting parallel search across platforms: " + platforms);
 
         // Using CompletableFuture for internal backend threading
-        List<CompletableFuture<List<?>>> futures = platforms.stream()
+        List<CompletableFuture<List<JobDto>>> futures = platforms.stream()
             .map(platform -> CompletableFuture.supplyAsync(() -> {
                 String url = urlBuilder.buildUrl(filter, platform);
                 List<JobDto> platformResults = new ArrayList<>();
@@ -54,11 +57,27 @@ public class JobScraperService {
 
                 // 2. Playwright Fallback
                 try {
-                    return playwrightStrategy.extract(url);
+                    platformResults = playwrightStrategy.extract(url);
+                    if (!platformResults.isEmpty()) {
+                        MyLogger.info("JobScraperService: Playwright success for " + platform + " (" + platformResults.size() + " jobs)");
+                        return platformResults;
+                    }
                 } catch (Exception e) {
                     MyLogger.err("JobScraperService: Playwright failed for " + platform + ": " + e.getMessage());
-                    return new ArrayList<>();
                 }
+
+                // 3. Google/Bing Dorking Fallback
+                try {
+                    platformResults = dorkingStrategy.extractDork(filter, platform);
+                    if (!platformResults.isEmpty()) {
+                        MyLogger.info("JobScraperService: Dorking success for " + platform + " (" + platformResults.size() + " jobs)");
+                        return platformResults;
+                    }
+                } catch (Exception e) {
+                    MyLogger.err("JobScraperService: Dorking failed for " + platform + ": " + e.getMessage());
+                }
+
+                return platformResults;
             }))
             .toList();
 
