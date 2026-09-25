@@ -39,8 +39,8 @@ public class PlaywrightConfig {
             
             int finalConcurrency = Math.min(maxBrowsersByMemory, cores * 2);
             
-            // Hard cap for a lightweight application footprint
-            finalConcurrency = Math.min(finalConcurrency, 2);
+            // Hard cap: 4 allows 8 platforms to complete without timeout backlog
+            finalConcurrency = Math.min(finalConcurrency, 4);
             
             // Always ensure at least 1 browser is allowed to run regardless of tight constraints
             if (finalConcurrency < 1) {

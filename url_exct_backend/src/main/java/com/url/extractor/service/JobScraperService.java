@@ -38,35 +38,47 @@ public class JobScraperService {
 
         MyLogger.info("JobScraperService: Starting parallel search across platforms: " + platforms);
 
+        // Platforms known to require login or actively block headless Playwright.
+        // Skip Jsoup+Playwright entirely for these and go straight to dorking.
+        final java.util.Set<String> DORK_ONLY_PLATFORMS = java.util.Set.of(
+            "cutshort", "indeed", "foundit", "hirist"
+        );
+
         // Using CompletableFuture for internal backend threading
         List<CompletableFuture<List<JobDto>>> futures = platforms.stream()
             .map(platform -> CompletableFuture.supplyAsync(() -> {
                 String url = urlBuilder.buildUrl(filter, platform);
                 List<JobDto> platformResults = new ArrayList<>();
 
-                // 1. Try Jsoup
-                try {
-                    platformResults = jsoupStrategy.extract(url);
-                    if (!platformResults.isEmpty()) {
-                        MyLogger.info("JobScraperService: Jsoup success for " + platform + " (" + platformResults.size() + " jobs)");
-                        return platformResults;
+                boolean dorkOnly = DORK_ONLY_PLATFORMS.contains(platform.toLowerCase());
+
+                if (!dorkOnly) {
+                    // 1. Try Jsoup (fast, no browser overhead)
+                    try {
+                        platformResults = jsoupStrategy.extract(url);
+                        if (!platformResults.isEmpty()) {
+                            MyLogger.info("JobScraperService: Jsoup success for " + platform + " (" + platformResults.size() + " jobs)");
+                            return platformResults;
+                        }
+                    } catch (Exception e) {
+                        MyLogger.err("JobScraperService: Jsoup failed for " + platform + ": " + e.getMessage());
                     }
-                } catch (Exception e) {
-                    MyLogger.err("JobScraperService: Jsoup failed for " + platform + ": " + e.getMessage());
+
+                    // 2. Playwright Fallback
+                    try {
+                        platformResults = playwrightStrategy.extract(url);
+                        if (!platformResults.isEmpty()) {
+                            MyLogger.info("JobScraperService: Playwright success for " + platform + " (" + platformResults.size() + " jobs)");
+                            return platformResults;
+                        }
+                    } catch (Exception e) {
+                        MyLogger.err("JobScraperService: Playwright failed for " + platform + ": " + e.getMessage());
+                    }
+                } else {
+                    MyLogger.info("JobScraperService: Skipping Jsoup/Playwright for login-walled platform: " + platform);
                 }
 
-                // 2. Playwright Fallback
-                try {
-                    platformResults = playwrightStrategy.extract(url);
-                    if (!platformResults.isEmpty()) {
-                        MyLogger.info("JobScraperService: Playwright success for " + platform + " (" + platformResults.size() + " jobs)");
-                        return platformResults;
-                    }
-                } catch (Exception e) {
-                    MyLogger.err("JobScraperService: Playwright failed for " + platform + ": " + e.getMessage());
-                }
-
-                // 3. Google/Bing Dorking Fallback
+                // 3. Bing Dorking Fallback (always tried, primary for login-walled platforms)
                 try {
                     platformResults = dorkingStrategy.extractDork(filter, platform);
                     if (!platformResults.isEmpty()) {

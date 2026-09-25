@@ -207,27 +207,55 @@ public class PlatformUrlBuilder {
 
     private String buildLinkedInUrl(JobSearchFilter filter) {
         String query = getOptimizedQuery(filter, 3);
+        String country = filter.getCountry() != null ? filter.getCountry().toLowerCase() : "in";
 
-        String baseUrl = "https://www.linkedin.com/jobs/search";
-        StringBuilder url = new StringBuilder(baseUrl)
-                .append("?keywords=")
-                .append(URLEncoder.encode(query, StandardCharsets.UTF_8));
+        // LinkedIn India uses a slug-based URL: in.linkedin.com/jobs/{slug}-jobs
+        // General LinkedIn uses: linkedin.com/jobs/search?keywords=...
+        String slug = query.toLowerCase()
+                .replaceAll("[^a-z0-9\\s]", "")
+                .trim()
+                .replaceAll("\\s+", "-");
+
+        // Use country-specific subdomain
+        String baseUrl;
+        if (country.equals("in")) {
+            baseUrl = "https://in.linkedin.com/jobs/" + slug + "-jobs";
+        } else if (country.equals("gb") || country.equals("uk")) {
+            baseUrl = "https://uk.linkedin.com/jobs/" + slug + "-jobs";
+        } else if (country.equals("us")) {
+            baseUrl = "https://www.linkedin.com/jobs/" + slug + "-jobs-united-states";
+        } else {
+            baseUrl = "https://www.linkedin.com/jobs/search?keywords=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
+        }
+
+        StringBuilder url = new StringBuilder(baseUrl);
 
         List<String> locations = filter.getLocations();
         if (locations != null && !locations.isEmpty()) {
-            url.append("&location=").append(URLEncoder.encode(locations.get(0), StandardCharsets.UTF_8));
-        } else if ("remote".equalsIgnoreCase(filter.getWorkMode())) {
-            url.append("&location=Remote");
-        } else {
-            // Default to full country name to avoid ISO collisions (e.g., IN -> India, not Indiana)
-            url.append("&location=").append(URLEncoder.encode(getFullCountryName(filter.getCountry()), StandardCharsets.UTF_8));
+            // For slug-based URLs, append location; for search URLs, use &location=
+            if (baseUrl.contains("?")) {
+                url.append("&location=").append(URLEncoder.encode(locations.get(0), StandardCharsets.UTF_8));
+            } else {
+                url.append("?location=").append(URLEncoder.encode(locations.get(0), StandardCharsets.UTF_8));
+            }
         }
 
+        // Add pagination
+        if (filter.getPageAsInt() != null && filter.getPageAsInt() > 1) {
+            String sep = url.toString().contains("?") ? "&" : "?";
+            url.append(sep).append("position=1&pageNum=").append(filter.getPageAsInt() - 1);
+        } else {
+            String sep = url.toString().contains("?") ? "&" : "?";
+            url.append(sep).append("position=1&pageNum=0");
+        }
+
+        // Date filter (LinkedIn uses f_TPR in seconds)
         if (filter.getDatePostedAsInt() != null) {
             long seconds = filter.getDatePostedAsInt() * 86400L;
             url.append("&f_TPR=r").append(seconds);
         }
 
+        // Experience filter
         if (filter.getExperienceLevel() != null) {
             String exp = filter.getExperienceLevel().toLowerCase();
             if (exp.contains("intern")) url.append("&f_E=1");
@@ -236,6 +264,7 @@ public class PlatformUrlBuilder {
             else if (exp.contains("senior")) url.append("&f_E=4");
         }
 
+        // Work mode filter
         if (filter.getWorkMode() != null) {
             String mode = filter.getWorkMode().toLowerCase();
             if (mode.contains("onsite")) url.append("&f_WT=1");
@@ -243,6 +272,7 @@ public class PlatformUrlBuilder {
             else if (mode.contains("hybrid")) url.append("&f_WT=3");
         }
 
+        // Job type filter
         if (filter.getJobType() != null) {
             String jt = filter.getJobType().toLowerCase();
             if (jt.contains("full")) url.append("&f_JT=F");
@@ -251,17 +281,9 @@ public class PlatformUrlBuilder {
             else if (jt.contains("intern")) url.append("&f_JT=I");
         }
 
-        if (filter.getDistance() != null) {
-            url.append("&distance=").append(filter.getDistance());
-        }
-
-        if (filter.getPageAsInt() != null && filter.getPageAsInt() > 1) {
-            int start = (filter.getPageAsInt() - 1) * 25;
-            url.append("&start=").append(start);
-        }
-
         return url.toString();
     }
+
 
     private String buildIndeedUrl(JobSearchFilter filter) {
         String optimizedQuery = getOptimizedQuery(filter, 5);
