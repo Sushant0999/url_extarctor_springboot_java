@@ -247,11 +247,16 @@ export default function JobSearch() {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-            try {
-                const platformFilters = { ...filters, platforms: [platform], page: page };
+                const platformFilters = { 
+                    ...filters, 
+                    platforms: [platform], 
+                    page: page,
+                    datePosted: (filters.datePosted && String(filters.datePosted).trim() !== '') ? parseInt(filters.datePosted, 10) : null,
+                    distance: (filters.distance && String(filters.distance).trim() !== '') ? parseInt(filters.distance, 10) : null
+                };
                 
                 // Enforce maximum 7 skills participating in the backend search query
-                platformFilters.skills = platformFilters.skills.slice(0, 7);
+                platformFilters.skills = (platformFilters.skills || []).slice(0, 7);
                 
                 const data = await searchJobs(platformFilters, { signal: controller.signal });
                 clearTimeout(timeoutId);

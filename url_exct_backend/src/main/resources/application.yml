@@ -1,6 +1,10 @@
 micronaut:
   application:
     name: urlExtractor
+  serde:
+    deserialization:
+      coercion-mode: LENIENT
+      accept-string-as-number: true
   server:
     port: ${PORT:8080}
     cors:
