@@ -52,7 +52,7 @@ public class PlatformUrlBuilder {
             url.append("?loc=").append(URLEncoder.encode(location, StandardCharsets.UTF_8));
         }
         
-        if (filter.getDatePosted() != null) {
+        if (filter.getDatePosted() != null && !filter.getDatePosted().isBlank()) {
             url.append(url.toString().contains("?") ? "&" : "?").append("posting=").append(filter.getDatePosted());
         }
         
@@ -67,12 +67,12 @@ public class PlatformUrlBuilder {
             url.append("&locations=").append(URLEncoder.encode(filter.getLocations().get(0), StandardCharsets.UTF_8));
         }
 
-        if (filter.getDatePosted() != null) {
+        if (filter.getDatePosted() != null && !filter.getDatePosted().isBlank()) {
             url.append("&jobFreshness=").append(filter.getDatePosted());
         }
         
-        if (filter.getPage() != null && filter.getPage() > 1) {
-            url.append("&pageNo=").append(filter.getPage());
+        if (filter.getPageAsInt() != null && filter.getPageAsInt() > 1) {
+            url.append("&pageNo=").append(filter.getPageAsInt());
         }
         return url.toString();
     }
@@ -94,8 +94,8 @@ public class PlatformUrlBuilder {
         }
         
         String url = "https://internshala.com/internships/keywords-" + encodedQuery.toLowerCase() + location;
-        if (filter.getPage() != null && filter.getPage() > 1) {
-            url += "/page-" + filter.getPage();
+        if (filter.getPageAsInt() != null && filter.getPageAsInt() > 1) {
+            url += "/page-" + filter.getPageAsInt();
         }
         return url;
     }
@@ -131,7 +131,7 @@ public class PlatformUrlBuilder {
         url.append("?k=").append(URLEncoder.encode(optimized, StandardCharsets.UTF_8));
         if (!location.isEmpty()) url.append("&l=").append(URLEncoder.encode(location, StandardCharsets.UTF_8));
 
-        if (filter.getDatePosted() != null) {
+        if (filter.getDatePosted() != null && !filter.getDatePosted().isBlank()) {
             url.append("&jobAge=").append(filter.getDatePosted());
         }
 
@@ -155,8 +155,8 @@ public class PlatformUrlBuilder {
             }
         }
 
-        if (filter.getPage() != null && filter.getPage() > 1) {
-            url.append(url.toString().contains("?") ? "&" : "?").append("page=").append(filter.getPage());
+        if (filter.getPageAsInt() != null && filter.getPageAsInt() > 1) {
+            url.append(url.toString().contains("?") ? "&" : "?").append("page=").append(filter.getPageAsInt());
         }
 
         return url.toString();
@@ -171,7 +171,7 @@ public class PlatformUrlBuilder {
             url.append("&locations=").append(URLEncoder.encode(filter.getLocations().get(0), StandardCharsets.UTF_8));
         }
 
-        if (filter.getDatePosted() != null) {
+        if (filter.getDatePosted() != null && !filter.getDatePosted().isBlank()) {
             url.append("&posted_within=").append(filter.getDatePosted());
         }
 
@@ -210,8 +210,8 @@ public class PlatformUrlBuilder {
             url.append("&location=").append(URLEncoder.encode(getFullCountryName(filter.getCountry()), StandardCharsets.UTF_8));
         }
 
-        if (filter.getDatePosted() != null) {
-            long seconds = filter.getDatePosted() * 86400L;
+        if (filter.getDatePostedAsInt() != null) {
+            long seconds = filter.getDatePostedAsInt() * 86400L;
             url.append("&f_TPR=r").append(seconds);
         }
 
@@ -242,8 +242,8 @@ public class PlatformUrlBuilder {
             url.append("&distance=").append(filter.getDistance());
         }
 
-        if (filter.getPage() != null && filter.getPage() > 1) {
-            int start = (filter.getPage() - 1) * 25;
+        if (filter.getPageAsInt() != null && filter.getPageAsInt() > 1) {
+            int start = (filter.getPageAsInt() - 1) * 25;
             url.append("&start=").append(start);
         }
 
@@ -318,15 +318,15 @@ public class PlatformUrlBuilder {
         if (filter.getJobType() != null && !filter.getJobType().isEmpty()) {
             url.append("&jt=").append(filter.getJobType().toLowerCase());
         }
-        if (filter.getDatePosted() != null) {
+        if (filter.getDatePosted() != null && !filter.getDatePosted().isBlank()) {
             url.append("&fromage=").append(filter.getDatePosted());
         }
         if (filter.getExperienceLevel() != null && !filter.getExperienceLevel().isEmpty()) {
             url.append("&explvl=").append(filter.getExperienceLevel());
         }
 
-        if (filter.getPage() != null && filter.getPage() > 1) {
-            int start = (filter.getPage() - 1) * 10;
+        if (filter.getPageAsInt() != null && filter.getPageAsInt() > 1) {
+            int start = (filter.getPageAsInt() - 1) * 10;
             url.append("&start=").append(start);
         }
 
