@@ -3,8 +3,8 @@ package com.url.extractor.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.url.extractor.utils.MyLogger;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import io.micronaut.context.annotation.Value;
+import jakarta.inject.Singleton;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -13,13 +13,13 @@ import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
 
-@Service
+@Singleton
 public class GroqService {
 
-    @Value("${groq.api.key}")
+    @Value("${groq.api.key:}")
     private String apiKey;
 
-    @Value("${groq.api.url}")
+    @Value("${groq.api.url:https://api.groq.com/openai/v1/chat/completions}")
     private String apiUrl;
 
     private final ObjectMapper objectMapper = new ObjectMapper();

@@ -2,13 +2,13 @@ package com.url.extractor.service;
 
 import com.url.extractor.dto.ExtractedData;
 import com.url.extractor.utils.MyLogger;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
+import io.micronaut.scheduling.annotation.Scheduled;
+import jakarta.inject.Singleton;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Service
+@Singleton
 public class CacheService {
 
     private final Map<String, CacheEntry> cache = new ConcurrentHashMap<>();
@@ -30,11 +30,12 @@ public class CacheService {
         }
     }
 
-    @Scheduled(fixedRate = 60000) // Every minute
+    @Scheduled(fixedRate = "60s")
     public void cleanup() {
         int removed = 0;
         for (String url : cache.keySet()) {
-            if (cache.get(url).isExpired()) {
+            CacheEntry entry = cache.get(url);
+            if (entry != null && entry.isExpired()) {
                 cache.remove(url);
                 removed++;
             }

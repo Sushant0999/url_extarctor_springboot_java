@@ -4,9 +4,9 @@ import com.microsoft.playwright.*;
 import com.url.extractor.dto.JobDto;
 import com.url.extractor.dto.JobSearchFilter;
 import com.url.extractor.utils.MyLogger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -14,11 +14,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-@Service
+@Singleton
 public class JobDorkingStrategy {
 
-    @Autowired
-    @Qualifier("playwrightSemaphore")
+    @Inject
+    @Named("playwrightSemaphore")
     private Semaphore playwrightSemaphore;
 
     public List<JobDto> extractDork(JobSearchFilter filter, String platform) {

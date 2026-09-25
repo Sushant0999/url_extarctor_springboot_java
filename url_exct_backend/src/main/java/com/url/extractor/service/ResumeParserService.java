@@ -1,24 +1,24 @@
 package com.url.extractor.service;
 
 import com.url.extractor.utils.MyLogger;
+import io.micronaut.http.multipart.CompletedFileUpload;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-@Service
+@Singleton
 public class ResumeParserService {
 
-    @Autowired
+    @Inject
     private GroqService groqService;
 
-    public String parseResume(MultipartFile file) {
+    public String parseResume(CompletedFileUpload file) {
         String text = extractText(file);
         if (text == null || text.trim().isEmpty()) {
             MyLogger.err("ResumeParserService: No text extracted from file.");
@@ -27,8 +27,8 @@ public class ResumeParserService {
         return groqService.parseResume(text);
     }
 
-    private String extractText(MultipartFile file) {
-        String filename = file.getOriginalFilename();
+    private String extractText(CompletedFileUpload file) {
+        String filename = file.getFilename();
         if (filename == null) return null;
 
         try (InputStream is = file.getInputStream()) {

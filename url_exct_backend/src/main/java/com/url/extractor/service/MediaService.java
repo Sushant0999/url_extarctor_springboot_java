@@ -1,16 +1,16 @@
 package com.url.extractor.service;
 
 import com.url.extractor.utils.MyLogger;
+import jakarta.inject.Singleton;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
+@Singleton
 public class MediaService {
 
     public List<byte[]> downloadMedia(List<String> imageUrls, List<String> videoUrls) {

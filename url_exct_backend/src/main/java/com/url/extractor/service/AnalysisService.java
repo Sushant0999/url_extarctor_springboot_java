@@ -1,15 +1,15 @@
 package com.url.extractor.service;
 
 import com.url.extractor.dto.ExtractedData;
+import jakarta.inject.Singleton;
 import org.jsoup.nodes.Document;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@Service
+@Singleton
 public class AnalysisService {
 
     public List<ExtractedData.SeoIssue> performSeoAudit(Document doc, ExtractedData data) {
@@ -97,6 +97,6 @@ public class AnalysisService {
         return "This page discusses " + data.getTitle() + 
                " and focuses on key topics extracted from its " + (content.split(" ").length) + 
                " words of content. The main areas covered include " + 
-               (data.getAnchorTags().size() > 5 ? "navigation to various external resources." : "internal site details.");
+               (data.getAnchorTags() != null && data.getAnchorTags().size() > 5 ? "navigation to various external resources." : "internal site details.");
     }
 }

@@ -1,7 +1,7 @@
 package com.url.extractor.service;
 
 import com.url.extractor.dto.ExtractedData;
-import org.springframework.stereotype.Service;
+import jakarta.inject.Singleton;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Thread-safe store that holds per-task extraction results and their storage paths.
  * Replaces the old single-entry AtomicReference approach to support multiple concurrent tasks.
  */
-@Service
+@Singleton
 public class ExtractionStore {
 
     // taskId -> ExtractedData

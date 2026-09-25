@@ -1,16 +1,18 @@
 package com.url.extractor.config;
 
 import com.url.extractor.utils.MyLogger;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import io.micronaut.context.annotation.Factory;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import java.lang.management.ManagementFactory;
 import java.util.concurrent.Semaphore;
 
-@Configuration
+@Factory
 public class PlaywrightConfig {
 
-    @Bean(name = "playwrightSemaphore")
+    @Singleton
+    @Named("playwrightSemaphore")
     public Semaphore playwrightSemaphore() {
         int concurrency = getOptimalBrowserConcurrency();
         MyLogger.info("Hardware Check: Setting Playwright global concurrency limit to: " + concurrency);

@@ -4,28 +4,27 @@ import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
 import com.url.extractor.dto.ExtractedData;
 import com.url.extractor.helper.ExtractionStrategy;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
+import com.url.extractor.utils.MyLogger;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.Semaphore;
-import com.url.extractor.utils.MyLogger;
 
-@Service
+@Singleton
 public class PlaywrightStrategy implements ExtractionStrategy {
 
     private static final String CHROMIUM_PATH =
             "/root/.cache/ms-playwright/chromium-1112/chrome-linux/chrome";
 
-    @Autowired
-    @Qualifier("playwrightSemaphore")
+    @Inject
+    @Named("playwrightSemaphore")
     private Semaphore playwrightSemaphore;
 
     private BrowserType.LaunchOptions buildLaunchOptions() {
-        return new BrowserType.LaunchOptions()
-                .setExecutablePath(Paths.get(CHROMIUM_PATH))
+        BrowserType.LaunchOptions options = new BrowserType.LaunchOptions()
                 .setHeadless(true)
                 .setArgs(Arrays.asList(
                         "--no-sandbox",                     // required: no user namespace on Android
@@ -40,6 +39,11 @@ public class PlaywrightStrategy implements ExtractionStrategy {
                         "--no-first-run",
                         "--mute-audio"
                 ));
+
+        if (new java.io.File(CHROMIUM_PATH).exists()) {
+            options.setExecutablePath(Paths.get(CHROMIUM_PATH));
+        }
+        return options;
     }
 
     @Override

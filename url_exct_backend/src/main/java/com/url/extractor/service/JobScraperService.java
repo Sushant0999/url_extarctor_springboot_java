@@ -3,8 +3,8 @@ package com.url.extractor.service;
 import com.url.extractor.dto.JobDto;
 import com.url.extractor.dto.JobSearchFilter;
 import com.url.extractor.utils.MyLogger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -13,19 +13,19 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-@Service
+@Singleton
 public class JobScraperService {
 
-    @Autowired
+    @Inject
     private PlatformUrlBuilder urlBuilder;
 
-    @Autowired
+    @Inject
     private JobJsoupStrategy jsoupStrategy;
 
-    @Autowired
+    @Inject
     private JobPlaywrightStrategy playwrightStrategy;
 
-    @Autowired
+    @Inject
     private JobDorkingStrategy dorkingStrategy;
 
     public List<JobDto> searchJobs(JobSearchFilter filter) {

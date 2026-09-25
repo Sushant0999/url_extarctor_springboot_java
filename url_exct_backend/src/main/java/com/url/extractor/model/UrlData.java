@@ -1,21 +1,23 @@
 package com.url.extractor.model;
 
-
+import io.micronaut.serde.annotation.Serdeable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+
 import java.util.List;
 
 @Data
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
+@Serdeable
 public class UrlData {
 
     private int id;
     private String topics;
-    private String Category;
+    private String category;
     private String baseUrl;
     private List<String> anchorTags;
     private String baseString;

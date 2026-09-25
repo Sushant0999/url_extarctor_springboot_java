@@ -3,20 +3,21 @@ package com.url.extractor.service;
 import com.url.extractor.dto.ExtractedData;
 import com.url.extractor.model.TaskStatus;
 import com.url.extractor.utils.MyLogger;
-import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import io.micronaut.http.sse.Event;
+import jakarta.inject.Singleton;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Service
+@Singleton
 public class TaskTrackerService {
 
     private final Map<String, TaskStatus> taskStatuses = new ConcurrentHashMap<>();
     private final Map<String, ExtractedData> taskResults = new ConcurrentHashMap<>();
-    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
+    private final Map<String, Sinks.Many<Event<String>>> emitters = new ConcurrentHashMap<>();
 
     public void createTask(String taskId) {
         taskStatuses.put(taskId, TaskStatus.PENDING);
@@ -45,39 +46,30 @@ public class TaskTrackerService {
         return taskResults.get(taskId);
     }
 
-    public SseEmitter subscribe(String taskId) {
-        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
-        emitters.put(taskId, emitter);
+    public Flux<Event<String>> subscribe(String taskId) {
+        Sinks.Many<Event<String>> sink = emitters.computeIfAbsent(
+                taskId,
+                k -> Sinks.many().multicast().directBestEffort()
+        );
 
-        emitter.onCompletion(() -> emitters.remove(taskId));
-        emitter.onTimeout(() -> emitters.remove(taskId));
-        emitter.onError((e) -> emitters.remove(taskId));
+        TaskStatus currentStatus = taskStatuses.getOrDefault(taskId, TaskStatus.PENDING);
 
-        // Send initial status
-        try {
-            TaskStatus currentStatus = taskStatuses.getOrDefault(taskId, TaskStatus.PENDING);
-            emitter.send(SseEmitter.event()
-                    .name("status")
-                    .data(currentStatus.name()));
-        } catch (IOException e) {
-            MyLogger.err("SSE Error during subscription for " + taskId + ": " + e.getMessage());
-        }
-
-        return emitter;
+        return Flux.concat(
+                Flux.just(Event.of(currentStatus.name()).name("status")),
+                sink.asFlux()
+        ).doFinally(signalType -> emitters.remove(taskId));
     }
 
     private void broadcast(String taskId, String status) {
-        SseEmitter emitter = emitters.get(taskId);
-        if (emitter != null) {
+        Sinks.Many<Event<String>> sink = emitters.get(taskId);
+        if (sink != null) {
             try {
-                emitter.send(SseEmitter.event()
-                        .name("status")
-                        .data(status));
+                sink.tryEmitNext(Event.of(status).name("status"));
                 if (status.equals("COMPLETED") || status.equals("FAILED")) {
-                    emitter.complete();
+                    sink.tryEmitComplete();
                     emitters.remove(taskId);
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 MyLogger.err("SSE Broadcast failed for " + taskId + ": " + e.getMessage());
                 emitters.remove(taskId);
             }
@@ -87,7 +79,10 @@ public class TaskTrackerService {
     public void removeTask(String taskId) {
         taskStatuses.remove(taskId);
         taskResults.remove(taskId);
-        emitters.remove(taskId);
+        Sinks.Many<Event<String>> sink = emitters.remove(taskId);
+        if (sink != null) {
+            sink.tryEmitComplete();
+        }
     }
 
     public Map<TaskStatus, Integer> getStatusCounts() {
@@ -105,4 +100,3 @@ public class TaskTrackerService {
         return taskStatuses.size();
     }
 }
-

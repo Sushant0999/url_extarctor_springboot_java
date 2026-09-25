@@ -3,31 +3,27 @@ package com.url.extractor.controller;
 import com.url.extractor.dto.SystemStatusResponse;
 import com.url.extractor.model.TaskStatus;
 import com.url.extractor.service.TaskTrackerService;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.inject.Inject;
 
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController
-@RequestMapping("/actuator/frontend")
-@CrossOrigin(origins = "*")
+@Controller("/actuator/frontend")
 @Tag(name = "Actuator for Frontend", description = "Consolidated system status and health for the dashboard.")
 public class SystemStatusController {
 
-    @Autowired
+    @Inject
     private TaskTrackerService taskTrackerService;
 
-    @GetMapping("/status")
+    @Get("/status")
     @Operation(summary = "Get application and system overview")
-    public ResponseEntity<SystemStatusResponse> getSystemStatus() {
+    public HttpResponse<SystemStatusResponse> getSystemStatus() {
         SystemStatusResponse status = SystemStatusResponse.builder()
                 .status("UP")
                 .uptime(ManagementFactory.getRuntimeMXBean().getUptime())
@@ -35,7 +31,7 @@ public class SystemStatusController {
                 .tasks(getTaskSummary())
                 .components(getComponentStatus())
                 .build();
-        return ResponseEntity.ok(status);
+        return HttpResponse.ok(status);
     }
 
     private SystemStatusResponse.MemoryInfo getMemoryInfo() {
@@ -67,8 +63,8 @@ public class SystemStatusController {
 
     private Map<String, String> getComponentStatus() {
         Map<String, String> components = new HashMap<>();
-        components.put("database", "DISABLED"); // No DB in this project?
-        components.put("rabbitmq", "UP"); // Assuming RabbitMQ is reachable
+        components.put("database", "DISABLED"); // No DB in this project
+        components.put("rabbitmq", "UP");
         return components;
     }
 }

@@ -4,44 +4,52 @@ import com.url.extractor.dto.ExtractedData;
 import com.url.extractor.model.TaskStatus;
 import com.url.extractor.service.*;
 import com.url.extractor.utils.MyLogger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
+import jakarta.annotation.Nullable;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 
-@Service
+@Singleton
 public class ExtractionServiceImpl implements ExtractionService {
 
-    @Autowired
+    @Inject
     private StrategySelector strategySelector;
 
-    @Autowired
+    @Inject
     private AnalysisService analysisService;
 
-    @Autowired
+    @Inject
     private JsoupStrategy jsoupStrategy;
 
-    @Autowired
+    @Inject
     private StorageService storageService;
 
-    @Autowired
+    @Inject
     private ExtractionStore extractionStore;
 
-    @Autowired(required = false)
+    @Inject
+    @Nullable
     private UrlProducer urlProducer;
 
-    @Autowired
+    @Inject
     private TaskTrackerService taskTrackerService;
 
-    @Autowired
-    @Qualifier("urlTaskExecutor")
-    private Executor urlTaskExecutor;
+    @Inject
+    @Named("urlTaskExecutor")
+    private ExecutorService urlTaskExecutor;
+
+    @Inject
+    private CacheService cacheService;
+
+    @Inject
+    private TaskCleanupService taskCleanupService;
 
     @Override
     public Map<String, String> processBulk(List<String> urls) {
@@ -71,19 +79,13 @@ public class ExtractionServiceImpl implements ExtractionService {
         return urlToTaskId;
     }
 
-    @Autowired
-    private CacheService cacheService;
-
-    @Autowired
-    private TaskCleanupService taskCleanupService;
-
     @Override
     public void processSingleUrl(String taskId, String url) {
         try {
             MyLogger.info("ExtractionService: Attempting to process -> " + url + " (TaskID: " + taskId + ")");
             taskTrackerService.updateStatus(taskId, TaskStatus.IN_PROGRESS);
 
-            // 🧠 Cache Check: Skip extraction if data exists and hasn't expired (5 min TTL)
+            // Cache Check: Skip extraction if data exists and hasn't expired (5 min TTL)
             CacheService.CacheEntry cachedEntry = cacheService.get(url);
             if (cachedEntry != null) {
                 MyLogger.info("ExtractionService: Serving from cache for " + url);
@@ -108,7 +110,7 @@ public class ExtractionServiceImpl implements ExtractionService {
                 String storagePath = storageService.saveExtractedData(extractedData);
                 extractionStore.save(taskId, extractedData, storagePath);
                 
-                // 🧠 Cache Store
+                // Cache Store
                 cacheService.put(url, extractedData, storagePath);
                 
                 taskTrackerService.completeTask(taskId, extractedData);

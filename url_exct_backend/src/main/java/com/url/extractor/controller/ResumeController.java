@@ -2,37 +2,38 @@ package com.url.extractor.controller;
 
 import com.url.extractor.service.ResumeParserService;
 import com.url.extractor.utils.MyLogger;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.MediaType;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Part;
+import io.micronaut.http.annotation.Post;
+import io.micronaut.http.multipart.CompletedFileUpload;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import jakarta.inject.Inject;
 
-@RestController
-@RequestMapping("/api/resume")
-@CrossOrigin(origins = "*", allowedHeaders = "*", maxAge = 3600L, methods = { RequestMethod.POST, RequestMethod.OPTIONS })
+@Controller("/api/resume")
 @Tag(name = "Resume API", description = "Endpoints for parsing resumes and extracting job search filters.")
 public class ResumeController {
 
-    @Autowired
+    @Inject
     private ResumeParserService resumeParserService;
 
-    @PostMapping("/parse")
+    @Post(value = "/parse", consumes = MediaType.MULTIPART_FORM_DATA)
     @Operation(summary = "Parse resume", description = "Extracts job title, skills, and experience level from an uploaded PDF or DOCX resume using AI.")
-    public ResponseEntity<String> parseResume(@RequestParam("file") MultipartFile file) {
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("File is empty.");
+    public HttpResponse<String> parseResume(@Part("file") CompletedFileUpload file) {
+        if (file == null || file.getSize() == 0) {
+            return HttpResponse.badRequest("File is empty.");
         }
 
-        MyLogger.info("ResumeController: Received resume upload: " + file.getOriginalFilename());
+        MyLogger.info("ResumeController: Received resume upload: " + file.getFilename());
         
         String result = resumeParserService.parseResume(file);
         
         if (result == null) {
-            return ResponseEntity.internalServerError().body("Failed to parse resume.");
+            return HttpResponse.serverError("Failed to parse resume.");
         }
 
-        return ResponseEntity.ok(result);
+        return HttpResponse.ok(result);
     }
 }

@@ -1,12 +1,12 @@
 package com.url.extractor.service;
 
 import com.url.extractor.dto.ExtractedData;
+import jakarta.inject.Singleton;
 import org.jsoup.nodes.Document;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@Singleton
 public class StrategySelector {
 
     private final JsoupStrategy jsoupStrategy;

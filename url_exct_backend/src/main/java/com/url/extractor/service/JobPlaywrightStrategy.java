@@ -8,22 +8,22 @@ import com.url.extractor.helper.JobExtractionStrategy;
 import com.url.extractor.utils.MyLogger;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
-@Service
+@Singleton
 public class JobPlaywrightStrategy implements JobExtractionStrategy {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     
-    @Autowired
-    @Qualifier("playwrightSemaphore")
+    @Inject
+    @Named("playwrightSemaphore")
     private Semaphore playwrightSemaphore;
 
     @Override

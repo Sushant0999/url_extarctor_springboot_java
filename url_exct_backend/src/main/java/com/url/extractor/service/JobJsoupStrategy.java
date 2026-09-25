@@ -5,16 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.url.extractor.dto.JobDto;
 import com.url.extractor.helper.JobExtractionStrategy;
 import com.url.extractor.utils.MyLogger;
+import jakarta.inject.Singleton;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
+@Singleton
 public class JobJsoupStrategy implements JobExtractionStrategy {
 
     private final ObjectMapper objectMapper = new ObjectMapper();

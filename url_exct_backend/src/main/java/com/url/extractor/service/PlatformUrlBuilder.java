@@ -1,13 +1,13 @@
 package com.url.extractor.service;
 
 import com.url.extractor.dto.JobSearchFilter;
-import org.springframework.stereotype.Service;
+import jakarta.inject.Singleton;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-@Service
+@Singleton
 public class PlatformUrlBuilder {
 
     public String buildUrl(JobSearchFilter filter, String platform) {

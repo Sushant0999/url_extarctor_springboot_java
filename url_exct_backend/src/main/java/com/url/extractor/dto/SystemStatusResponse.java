@@ -1,5 +1,6 @@
 package com.url.extractor.dto;
 
+import io.micronaut.serde.annotation.Serdeable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Serdeable
 public class SystemStatusResponse {
     private String status;
     private long uptime;
@@ -22,6 +24,7 @@ public class SystemStatusResponse {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    @Serdeable
     public static class MemoryInfo {
         private long total;
         private long free;
@@ -33,6 +36,7 @@ public class SystemStatusResponse {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    @Serdeable
     public static class TaskSummary {
         private int total;
         private int pending;

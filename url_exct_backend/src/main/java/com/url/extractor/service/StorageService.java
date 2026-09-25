@@ -3,8 +3,8 @@ package com.url.extractor.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.url.extractor.dto.ExtractedData;
 import com.url.extractor.utils.MyLogger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -17,10 +17,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-@Service
+@Singleton
 public class StorageService {
 
-    @Autowired
+    @Inject
     private MediaService mediaService;
 
     private static final String BASE_STORAGE_PATH = "extracted_data";

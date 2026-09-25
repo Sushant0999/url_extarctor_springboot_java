@@ -1,25 +1,25 @@
 package com.url.extractor.service;
 
 import com.url.extractor.utils.MyLogger;
-import org.springframework.beans.factory.annotation.Autowired;
-import java.io.File;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
+import io.micronaut.scheduling.annotation.Scheduled;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
+import java.io.File;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Service
+@Singleton
 public class TaskCleanupService {
 
-    @Autowired
+    @Inject
     private TaskTrackerService taskTrackerService;
 
-    @Autowired
+    @Inject
     private ExtractionStore extractionStore;
 
-    @Autowired
+    @Inject
     private StorageService storageService;
 
     // taskId -> task completion/creation time mapping
@@ -40,7 +40,7 @@ public class TaskCleanupService {
     /**
      * Runs every 5 minutes to sweep old tasks from memory and disk.
      */
-    @Scheduled(fixedRate = 300000)
+    @Scheduled(fixedRate = "5m")
     public void cleanupOldTasks() {
         long now = System.currentTimeMillis();
         int removedCount = 0;

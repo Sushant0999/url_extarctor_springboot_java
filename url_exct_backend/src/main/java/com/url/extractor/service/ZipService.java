@@ -1,6 +1,6 @@
 package com.url.extractor.service;
 
-import org.springframework.stereotype.Service;
+import jakarta.inject.Singleton;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-@Service
+@Singleton
 public class ZipService {
 
     public Path zipDirectory(String sourceDirPath) throws IOException {

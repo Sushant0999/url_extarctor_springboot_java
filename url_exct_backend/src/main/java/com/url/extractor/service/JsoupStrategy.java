@@ -2,14 +2,14 @@ package com.url.extractor.service;
 
 import com.url.extractor.dto.ExtractedData;
 import com.url.extractor.helper.ExtractionStrategy;
+import jakarta.inject.Singleton;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
 
-@Service
+@Singleton
 public class JsoupStrategy implements ExtractionStrategy {
 
     @Override

@@ -1,5 +1,6 @@
 package com.url.extractor.dto;
 
+import io.micronaut.serde.annotation.Serdeable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Serdeable
 public class JobSearchFilter {
     private String query;
     private List<String> locations;

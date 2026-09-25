@@ -1,5 +1,6 @@
 package com.url.extractor.dto;
 
+import io.micronaut.serde.annotation.Serdeable;
 import lombok.*;
 
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Serdeable
 public class ExtractedData {
 
     // Original fields
@@ -39,6 +41,7 @@ public class ExtractedData {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
+    @Serdeable
     public static class SeoIssue {
         private String title;
         private String status; // PASS, FAIL, WARNING
@@ -48,6 +51,7 @@ public class ExtractedData {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
+    @Serdeable
     public static class LinkStatus {
         private String url;
         private int statusCode;
