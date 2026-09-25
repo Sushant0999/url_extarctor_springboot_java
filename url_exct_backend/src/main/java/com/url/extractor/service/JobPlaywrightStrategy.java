@@ -251,35 +251,76 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
     private List<JobDto> extractFromShine(Page page) {
         List<JobDto> jobs = new ArrayList<>();
         try {
-            // Shine uses .jobCard as each listing card
-            Locator cards = page.locator(".jobCard, [class*='jobCard']:not([class*='jobCardSkeleton'])");
-            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000)); } catch (Exception ignored) {}
-            
+            // Shine migrated to Next.js CSS Modules (hashed classes like result-card_hit__tL8tN).
+            // The stable anchor used is: article > a[class*='result-card_hit'] OR any <article> element.
+            // The aria-label on the anchor contains "Job Title at Company Name".
+            Locator cards = page.locator("article");
+            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(15000)); } catch (Exception ignored) {}
+
             int count = cards.count();
+            if (count == 0) {
+                // Fallback: try older class-based selectors in case Shine rolled back
+                cards = page.locator(".jobCard, [class*='jobCard']:not([class*='jobCardSkeleton']), [class*='result-card']");
+                try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(5000)); } catch (Exception ignored) {}
+                count = cards.count();
+            }
             MyLogger.info("JobPlaywrightStrategy: Found " + count + " Shine job cards.");
+
+            if (count == 0) {
+                try {
+                    java.nio.file.Files.writeString(java.nio.file.Paths.get("debug_shine.html"), page.innerHTML("body"));
+                    MyLogger.warn("JobPlaywrightStrategy: Dumped Shine HTML to debug_shine.html");
+                } catch (Exception ignored) {}
+            }
 
             int success = 0;
             for (int i = 0; i < count; i++) {
                 Locator card = cards.nth(i);
                 try {
-                    // Try multiple title selectors in priority order
-                    String title = safeText(card, "h2, h3, .jobTitle, [class*='jobTitle'], [class*='title'], [itemprop='title']");
+                    // Primary: parse from the anchor's aria-label: "Job Title at Company Name"
+                    String title = "";
+                    String company = "Unknown";
+                    String link = null;
+
+                    // Try to find the primary anchor with aria-label
+                    Locator anchor = card.locator("a[aria-label], a[class*='result-card_hit'], a[class*='hit'], a[href*='/jobs/']").first();
+                    if (anchor.count() > 0) {
+                        String ariaLabel = anchor.getAttribute("aria-label");
+                        link = anchor.getAttribute("href");
+
+                        if (ariaLabel != null && ariaLabel.contains(" at ")) {
+                            int atIdx = ariaLabel.lastIndexOf(" at ");
+                            title = ariaLabel.substring(0, atIdx).trim();
+                            company = ariaLabel.substring(atIdx + 4).trim();
+                        } else {
+                            // Fallback: read h2/h3 as title
+                            title = safeText(card, "h2, h3, [class*='title']");
+                            company = safeText(card, "[class*='company'], [class*='Company']");
+                        }
+                    }
+
+                    // Second fallback: get title from h2/h3 if still empty
+                    if (title.isEmpty()) {
+                        title = safeText(card, "h2, h3, [class*='jobTitle'], [class*='title']");
+                    }
                     if (title.isEmpty()) continue; // skip skeleton/empty cards
 
-                    String company = safeText(card, ".companyName, [class*='company'], [class*='Company'], [itemprop='name']");
-                    String location = safeText(card, ".location, [class*='location'], [class*='Location'], [class*='loc']");
-                    String salary = safeText(card, ".salaryLpa, [class*='salary'], [class*='Salary'], [class*='ctc']");
-
                     // Links
-                    String link = null;
-                    try { link = card.locator("a").first().getAttribute("href"); } catch (Exception ignored) {}
+                    if (link == null) {
+                        try { link = card.locator("a").first().getAttribute("href"); } catch (Exception ignored) {}
+                    }
                     if (link != null && !link.startsWith("http")) link = "https://www.shine.com" + link;
+
+                    // Location & salary - use broad class fragment matching
+                    String location = safeText(card, "[class*='location'], [class*='Location'], [class*='loc'], [class*='city']");
+                    String salary = safeText(card, "[class*='salary'], [class*='Salary'], [class*='ctc'], [class*='lakh']");
+                    String experience = safeText(card, "[class*='exp'], [class*='experience']");
 
                     jobs.add(JobDto.builder()
                             .title(title)
                             .company(company.isEmpty() ? "Unknown" : company)
                             .location(location.isEmpty() ? null : location)
-                            .salary(salary.isEmpty() ? null : salary)
+                            .salary(salary.isEmpty() ? (experience.isEmpty() ? null : experience) : salary)
                             .link(link)
                             .source("Shine")
                             .build());

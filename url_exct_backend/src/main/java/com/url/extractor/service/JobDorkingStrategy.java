@@ -114,6 +114,7 @@ public class JobDorkingStrategy {
             case "cutshort" -> "site:cutshort.io/job";
             case "internshala" -> "site:internshala.com/internship/detail";
             case "hirist" -> "site:hirist.tech/job";
+            case "shine" -> "site:shine.com/jobs";
             default -> null;
         };
     }
