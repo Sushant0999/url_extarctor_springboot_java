@@ -36,62 +36,76 @@ public class JobScraperService {
 
 
 
-        MyLogger.info("JobScraperService: Starting parallel search across platforms: " + platforms);
+        MyLogger.info("JobScraperService: Starting parallel search (Playwright + Google Dork) across platforms: " + platforms);
 
         // Platforms known to require login or actively block headless Playwright.
-        // Skip Jsoup+Playwright entirely for these and go straight to dorking.
+        // For these, skip Jsoup+Playwright and rely solely on Google Dork.
         final java.util.Set<String> DORK_ONLY_PLATFORMS = java.util.Set.of(
             "cutshort", "indeed", "foundit", "hirist"
         );
 
-        // Using CompletableFuture for internal backend threading
+        // For each platform, run TWO sub-tasks in parallel:
+        //   A) Playwright (or Jsoup) extraction from the platform's own website
+        //   B) Google Dork extraction via Bing/Google search
+        // Then merge both result sets for maximum coverage.
         List<CompletableFuture<List<JobDto>>> futures = platforms.stream()
             .map(platform -> CompletableFuture.supplyAsync(() -> {
                 String url = urlBuilder.buildUrl(filter, platform);
-                List<JobDto> platformResults = new ArrayList<>();
-
                 boolean dorkOnly = DORK_ONLY_PLATFORMS.contains(platform.toLowerCase());
 
-                if (!dorkOnly) {
-                    // 1. Try Jsoup (fast, no browser overhead)
+                // --- Sub-task A: Direct scraping (Jsoup → Playwright) ---
+                CompletableFuture<List<JobDto>> directFuture = CompletableFuture.supplyAsync(() -> {
+                    List<JobDto> direct = new ArrayList<>();
+                    if (dorkOnly) {
+                        MyLogger.info("JobScraperService: Skipping direct scraping for login-walled platform: " + platform);
+                        return direct;
+                    }
+                    // 1. Jsoup (fast, no browser)
                     try {
-                        platformResults = jsoupStrategy.extract(url);
-                        if (!platformResults.isEmpty()) {
-                            MyLogger.info("JobScraperService: Jsoup success for " + platform + " (" + platformResults.size() + " jobs)");
-                            return platformResults;
+                        direct = jsoupStrategy.extract(url);
+                        if (!direct.isEmpty()) {
+                            MyLogger.info("JobScraperService: Jsoup success for " + platform + " (" + direct.size() + " jobs)");
+                            return direct;
                         }
                     } catch (Exception e) {
                         MyLogger.err("JobScraperService: Jsoup failed for " + platform + ": " + e.getMessage());
                     }
-
-                    // 2. Playwright Fallback
+                    // 2. Playwright
                     try {
-                        platformResults = playwrightStrategy.extract(url);
-                        if (!platformResults.isEmpty()) {
-                            MyLogger.info("JobScraperService: Playwright success for " + platform + " (" + platformResults.size() + " jobs)");
-                            return platformResults;
+                        direct = playwrightStrategy.extract(url);
+                        if (!direct.isEmpty()) {
+                            MyLogger.info("JobScraperService: Playwright success for " + platform + " (" + direct.size() + " jobs)");
                         }
                     } catch (Exception e) {
                         MyLogger.err("JobScraperService: Playwright failed for " + platform + ": " + e.getMessage());
                     }
-                } else {
-                    MyLogger.info("JobScraperService: Skipping Jsoup/Playwright for login-walled platform: " + platform);
-                }
+                    return direct;
+                });
 
-                // 3. Bing Dorking Fallback (always tried, primary for login-walled platforms)
-                try {
-                    platformResults = dorkingStrategy.extractDork(filter, platform);
-                    if (!platformResults.isEmpty()) {
-                        MyLogger.info("JobScraperService: Dorking success for " + platform + " (" + platformResults.size() + " jobs)");
-                        return platformResults;
+                // --- Sub-task B: Google Dork (always runs for all platforms) ---
+                CompletableFuture<List<JobDto>> dorkFuture = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        List<JobDto> dorkResults = dorkingStrategy.extractDork(filter, platform);
+                        if (!dorkResults.isEmpty()) {
+                            MyLogger.info("JobScraperService: Google Dork success for " + platform + " (" + dorkResults.size() + " jobs)");
+                        }
+                        return dorkResults;
+                    } catch (Exception e) {
+                        MyLogger.err("JobScraperService: Google Dork failed for " + platform + ": " + e.getMessage());
+                        return new ArrayList<>();
                     }
-                } catch (Exception e) {
-                    MyLogger.err("JobScraperService: Dorking failed for " + platform + ": " + e.getMessage());
-                }
+                });
 
-                return platformResults;
+                // Wait for both and merge
+                List<JobDto> merged = new ArrayList<>();
+                try { merged.addAll(directFuture.join()); } catch (Exception e) {}
+                try { merged.addAll(dorkFuture.join()); } catch (Exception e) {}
+
+                MyLogger.info("JobScraperService: " + platform + " total (before dedup): " + merged.size() + " jobs");
+                return merged;
             }))
             .toList();
+
 
         // Wait for all platforms to finish and collect results safely
         List<JobDto> allResults = futures.stream()

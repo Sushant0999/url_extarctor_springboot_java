@@ -55,17 +55,45 @@ public class JobDorkingStrategy {
                  Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                     .setHeadless(true)
                     .setChannel("chrome")
-                    .setArgs(List.of("--disable-blink-features=AutomationControlled", "--no-sandbox"))
+                    .setArgs(List.of(
+                        "--disable-blink-features=AutomationControlled",
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-web-security",
+                        "--disable-features=IsolateOrigins,site-per-process"
+                    ))
                  );
                  BrowserContext context = browser.newContext(new Browser.NewContextOptions()
                     .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
                     .setViewportSize(1920, 1080)
+                    .setLocale("en-US")
+                    .setTimezoneId("Asia/Kolkata")
                  );
                  Page page = context.newPage()) {
 
-                page.addInitScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
+                // Comprehensive stealth injection to pass Google bot detection
+                page.addInitScript(
+                    "// Remove webdriver flag\n" +
+                    "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});\n" +
+                    "// Mock chrome runtime\n" +
+                    "window.chrome = { runtime: {}, loadTimes: function(){}, csi: function(){}, app: {} };\n" +
+                    "// Spoof plugins\n" +
+                    "Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3,4,5]});\n" +
+                    "// Spoof languages\n" +
+                    "Object.defineProperty(navigator, 'languages', {get: () => ['en-US','en','hi']});\n" +
+                    "// Spoof permissions\n" +
+                    "const origQuery = window.navigator.permissions.query;\n" +
+                    "window.navigator.permissions.query = (params) =>\n" +
+                    "  params.name === 'notifications' ? Promise.resolve({state:'denied'}) : origQuery(params);\n" +
+                    "// Spoof hardware concurrency\n" +
+                    "Object.defineProperty(navigator, 'hardwareConcurrency', {get: () => 8});\n" +
+                    "// Spoof device memory\n" +
+                    "Object.defineProperty(navigator, 'deviceMemory', {get: () => 8});\n"
+                );
+
                 page.setExtraHTTPHeaders(java.util.Map.of(
-                    "Accept-Language", "en-US,en;q=0.9",
+                    "Accept-Language", "en-US,en;q=0.9,hi;q=0.8",
+                    "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
                     "Referer", "https://www.google.com/"
                 ));
 
@@ -73,12 +101,22 @@ public class JobDorkingStrategy {
                     .setTimeout(60000)
                     .setWaitUntil(com.microsoft.playwright.options.WaitUntilState.DOMCONTENTLOADED));
 
-                // Wait for result cards to appear
+                // Human-like delay before reading results
+                try { Thread.sleep(2000 + (long)(Math.random() * 1500)); } catch (Exception ignored) {}
+
+                // Check for CAPTCHA (Google consent/captcha pages)
+                String pageTitle = page.title().toLowerCase();
+                if (pageTitle.contains("captcha") || pageTitle.contains("consent") || pageTitle.contains("sorry")) {
+                    MyLogger.warn("JobDorkingStrategy: Bot check detected on " + searchUrl + " - title: " + pageTitle);
+                }
+
+                // Wait for result cards
                 Locator cards = page.locator(cardSelector);
-                try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000)); } catch (Exception ignored) {}
+                try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(8000)); } catch (Exception ignored) {}
 
                 int count = cards.count();
                 MyLogger.info("JobDorkingStrategy: Found " + count + " dork results on " + searchUrl);
+
 
                 for (int i = 0; i < count; i++) {
                     Locator card = cards.nth(i);
