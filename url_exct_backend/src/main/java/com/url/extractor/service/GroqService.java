@@ -73,10 +73,83 @@ public class GroqService {
                 MyLogger.err("GroqService: API Error! Status: " + response.statusCode() + " | Body: " + response.body());
                 return null;
             }
-
         } catch (Exception e) {
             MyLogger.err("GroqService: Error parsing resume: " + e.getMessage());
             return null;
         }
+    }
+
+    public boolean hasApiKey() {
+        return apiKey != null && !apiKey.trim().isEmpty();
+    }
+
+    public String generatePlatformSearchUrl(String platform, com.url.extractor.dto.JobSearchFilter filter, String fallbackUrl) {
+        if (!hasApiKey()) {
+            return fallbackUrl;
+        }
+
+        try {
+            MyLogger.info("GroqService: Asking Groq to build/verify latest actual URL for platform: " + platform);
+
+            String role = filter.getQuery() != null && !filter.getQuery().isBlank() ? filter.getQuery() :
+                          (filter.getSkills() != null && !filter.getSkills().isEmpty() ? String.join(" ", filter.getSkills()) : "Software Developer");
+            String location = (filter.getLocations() != null && !filter.getLocations().isEmpty()) ? String.join(", ", filter.getLocations()) : "";
+            String country = filter.getCountry() != null ? filter.getCountry() : "in";
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("model", "llama-3.3-70b-versatile");
+            body.put("temperature", 0.1);
+
+            var systemMessage = Map.of(
+                "role", "system",
+                "content", "You are an expert web scraping URL builder. Given a job platform, target job role, location, and country, generate the EXACT modern search URL used by that platform in 2025/2026.\n" +
+                           "Known conventions:\n" +
+                           "- indeed (India): https://in.indeed.com/q-{role-slug}-jobs.html (or https://in.indeed.com/jobs?q=...)\n" +
+                           "- linkedin (India): https://in.linkedin.com/jobs/{role-slug}-jobs?position=1&pageNum=0\n" +
+                           "- shine: https://www.shine.com/job-search/{role-slug}-jobs\n" +
+                           "- naukri: https://www.naukri.com/{role-slug}-jobs\n" +
+                           "- internshala: https://internshala.com/jobs/{role-slug}-jobs\n" +
+                           "- hirist: https://www.hirist.tech/search?q={role}\n" +
+                           "- foundit: https://www.foundit.in/srp/results?query={role}\n" +
+                           "Return ONLY a clean JSON object: {\"url\": \"https://...\"}. If uncertain, return: {\"url\": \"" + fallbackUrl + "\"}"
+            );
+
+            var userMessage = Map.of(
+                "role", "user",
+                "content", "Platform: " + platform + "\nRole: " + role + "\nLocation: " + location + "\nCountry: " + country + "\nFallbackUrl: " + fallbackUrl
+            );
+
+            body.put("messages", java.util.Arrays.asList(systemMessage, userMessage));
+            body.put("response_format", Map.of("type", "json_object"));
+
+            String jsonBody = objectMapper.writeValueAsString(body);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(apiUrl))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + apiKey)
+                    .timeout(java.time.Duration.ofSeconds(5))
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                JsonNode root = objectMapper.readTree(response.body());
+                String content = root.path("choices").path(0).path("message").path("content").asText();
+                JsonNode parsed = objectMapper.readTree(content);
+                String generatedUrl = parsed.path("url").asText();
+                if (generatedUrl != null && (generatedUrl.startsWith("http://") || generatedUrl.startsWith("https://"))) {
+                    MyLogger.info("GroqService: Successfully generated URL for " + platform + ": " + generatedUrl);
+                    return generatedUrl;
+                }
+            } else {
+                MyLogger.err("GroqService: URL generation API returned status " + response.statusCode());
+            }
+        } catch (Exception e) {
+            MyLogger.err("GroqService: Error generating URL via Groq: " + e.getMessage());
+        }
+
+        return fallbackUrl;
     }
 }

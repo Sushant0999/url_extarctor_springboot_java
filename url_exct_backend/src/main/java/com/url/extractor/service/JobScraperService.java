@@ -41,7 +41,7 @@ public class JobScraperService {
         // Platforms known to require login or actively block headless Playwright.
         // For these, skip Jsoup+Playwright and rely solely on Google Dork.
         final java.util.Set<String> DORK_ONLY_PLATFORMS = java.util.Set.of(
-            "cutshort", "indeed", "foundit", "hirist"
+            "cutshort", "foundit", "hirist"
         );
 
         // For each platform, run TWO sub-tasks in parallel:

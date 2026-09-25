@@ -10,7 +10,18 @@ import java.util.List;
 @Singleton
 public class PlatformUrlBuilder {
 
+    @jakarta.inject.Inject
+    private GroqService groqService;
+
     public String buildUrl(JobSearchFilter filter, String platform) {
+        String staticUrl = buildStaticUrl(filter, platform);
+        if (groqService != null && groqService.hasApiKey()) {
+            return groqService.generatePlatformSearchUrl(platform, filter, staticUrl);
+        }
+        return staticUrl;
+    }
+
+    private String buildStaticUrl(JobSearchFilter filter, String platform) {
         String p = platform.toLowerCase();
         if (p.contains("linkedin")) return buildLinkedInUrl(filter);
         if (p.contains("naukri")) return buildNaukriUrl(filter);
@@ -286,14 +297,16 @@ public class PlatformUrlBuilder {
 
 
     private String buildIndeedUrl(JobSearchFilter filter) {
-        String optimizedQuery = getOptimizedQuery(filter, 5);
+        String optimizedQuery = getOptimizedQuery(filter, 3);
         StringBuilder query = new StringBuilder(optimizedQuery);
 
+        boolean hasComplexFilters = false;
         if (filter.getAdditionalKeywords() != null && !filter.getAdditionalKeywords().isEmpty()) {
             query.append(" ").append(filter.getAdditionalKeywords());
         }
 
         if (filter.getCompanies() != null && !filter.getCompanies().isEmpty()) {
+            hasComplexFilters = true;
             query.append(" (");
             for (int i = 0; i < filter.getCompanies().size(); i++) {
                 query.append("company:\"").append(filter.getCompanies().get(i)).append("\"");
@@ -311,43 +324,75 @@ public class PlatformUrlBuilder {
             if (mode.equals("remote")) query.append(" remote");
         }
 
-        String encodedQuery = URLEncoder.encode(query.toString().trim(), StandardCharsets.UTF_8);
         List<String> locations = filter.getLocations();
         String primaryLocation = "";
-        
         if (locations != null && !locations.isEmpty()) {
-            if (locations.size() > 1) {
-                StringBuilder locQuery = new StringBuilder(" (");
-                locQuery.append(String.join(" OR ", locations));
-                locQuery.append(")");
-                encodedQuery += URLEncoder.encode(locQuery.toString(), StandardCharsets.UTF_8);
-            } else {
-                primaryLocation = locations.get(0);
-            }
+            primaryLocation = locations.get(0);
         }
 
-        if ("remote".equalsIgnoreCase(filter.getWorkMode()) && primaryLocation.isEmpty()) {
-            primaryLocation = "Remote";
-        } else if (primaryLocation.isEmpty()) {
-            // Fix: Pin search to full country name instead of ISO code (IN -> Indiana collision)
-            primaryLocation = getFullCountryName(filter.getCountry());
+        String countryIso = filter.getCountry() != null ? filter.getCountry().toLowerCase() : "in";
+        boolean isIndia = "in".equals(countryIso);
+
+        // For Indeed India without complex company boolean queries, use the direct SEO slug URL:
+        // https://in.indeed.com/q-java-developer-jobs.html (as confirmed by user)
+        if (isIndia && !hasComplexFilters) {
+            String slug = optimizedQuery.toLowerCase()
+                    .replaceAll("[^a-z0-9\\s]", "")
+                    .trim()
+                    .replaceAll("\\s+", "-");
+
+            StringBuilder slugUrl = new StringBuilder("https://in.indeed.com/q-").append(slug);
+
+            if (!primaryLocation.isEmpty() && !"india".equalsIgnoreCase(primaryLocation)) {
+                String locSlug = primaryLocation.toLowerCase()
+                        .replaceAll("[^a-z0-9\\s]", "")
+                        .trim()
+                        .replaceAll("\\s+", "-");
+                slugUrl.append("-l-").append(locSlug);
+            }
+            slugUrl.append("-jobs.html");
+
+            // Append filter parameters if any
+            StringBuilder params = new StringBuilder();
+            if (filter.getDatePosted() != null && !filter.getDatePosted().isBlank()) {
+                params.append("fromage=").append(filter.getDatePosted());
+            }
+            if (filter.getExperienceLevel() != null && !filter.getExperienceLevel().isEmpty()) {
+                if (params.length() > 0) params.append("&");
+                params.append("explvl=").append(filter.getExperienceLevel());
+            }
+            if (filter.getJobType() != null && !filter.getJobType().isEmpty()) {
+                if (params.length() > 0) params.append("&");
+                params.append("jt=").append(filter.getJobType().toLowerCase());
+            }
+            if (filter.getPageAsInt() != null && filter.getPageAsInt() > 1) {
+                if (params.length() > 0) params.append("&");
+                params.append("start=").append((filter.getPageAsInt() - 1) * 10);
+            }
+
+            if (params.length() > 0) {
+                slugUrl.append("?").append(params);
+            }
+
+            return slugUrl.toString();
         }
-        
-        String baseUrl = "https://in.indeed.com/jobs";
-        if (filter.getCountry() != null && !filter.getCountry().isEmpty()) {
-            String iso = filter.getCountry().toLowerCase();
-            switch (iso) {
-                case "in": baseUrl = "https://in.indeed.com/jobs"; break;
+
+        // Standard /jobs?q= fallback for international or complex queries
+        String baseUrl = isIndia ? "https://in.indeed.com/jobs" : "https://www.indeed.com/jobs";
+        if (!isIndia && filter.getCountry() != null) {
+            switch (countryIso) {
                 case "gb": case "uk": baseUrl = "https://uk.indeed.com/jobs"; break;
                 case "ca": baseUrl = "https://ca.indeed.com/jobs"; break;
                 case "au": baseUrl = "https://au.indeed.com/jobs"; break;
                 case "us": baseUrl = "https://www.indeed.com/jobs"; break;
-                default: baseUrl = "https://" + iso + ".indeed.com/jobs"; break;
+                default: baseUrl = "https://" + countryIso + ".indeed.com/jobs"; break;
             }
         }
 
+        String encodedQuery = URLEncoder.encode(query.toString().trim(), StandardCharsets.UTF_8);
         StringBuilder url = new StringBuilder(baseUrl).append("?q=").append(encodedQuery);
-        if (!primaryLocation.trim().isEmpty()) {
+
+        if (!primaryLocation.trim().isEmpty() && !("India".equalsIgnoreCase(primaryLocation) && isIndia)) {
             url.append("&l=").append(URLEncoder.encode(primaryLocation, StandardCharsets.UTF_8));
         }
         if (filter.getJobType() != null && !filter.getJobType().isEmpty()) {
@@ -359,7 +404,6 @@ public class PlatformUrlBuilder {
         if (filter.getExperienceLevel() != null && !filter.getExperienceLevel().isEmpty()) {
             url.append("&explvl=").append(filter.getExperienceLevel());
         }
-
         if (filter.getPageAsInt() != null && filter.getPageAsInt() > 1) {
             int start = (filter.getPageAsInt() - 1) * 10;
             url.append("&start=").append(start);

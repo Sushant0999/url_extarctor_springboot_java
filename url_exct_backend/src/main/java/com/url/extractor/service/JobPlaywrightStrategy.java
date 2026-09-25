@@ -49,8 +49,27 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
                  );
                  Page page = context.newPage()) {
 
-                // Bypass basic bot detection (e.g. Akamai, Cloudflare) usually affecting Naukri & LinkedIn
-                page.addInitScript("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})");
+                // Comprehensive stealth injection to pass Cloudflare, Akamai, and bot detection
+                page.addInitScript(
+                    "// Remove webdriver flag\n" +
+                    "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});\n" +
+                    "// Mock chrome runtime\n" +
+                    "window.chrome = { runtime: {}, loadTimes: function(){}, csi: function(){}, app: {} };\n" +
+                    "// Spoof plugins\n" +
+                    "Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3,4,5]});\n" +
+                    "// Spoof languages\n" +
+                    "Object.defineProperty(navigator, 'languages', {get: () => ['en-US','en','hi']});\n" +
+                    "// Spoof permissions\n" +
+                    "const origQuery = window.navigator.permissions ? window.navigator.permissions.query : null;\n" +
+                    "if (window.navigator.permissions) {\n" +
+                    "  window.navigator.permissions.query = (params) =>\n" +
+                    "    params.name === 'notifications' ? Promise.resolve({state:'denied'}) : (origQuery ? origQuery(params) : Promise.resolve({state:'prompt'}));\n" +
+                    "}\n" +
+                    "// Spoof hardware concurrency\n" +
+                    "Object.defineProperty(navigator, 'hardwareConcurrency', {get: () => 8});\n" +
+                    "// Spoof device memory\n" +
+                    "Object.defineProperty(navigator, 'deviceMemory', {get: () => 8});\n"
+                );
 
                 page.setExtraHTTPHeaders(Map.of(
                     "Accept-Language", "en-US,en;q=0.9",
@@ -80,14 +99,11 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
                     return extractFromShine(page);
                 } else if (url.contains("hirist.tech") || url.contains("hirist.com")) {
                     return extractFromHirist(page);
+                } else if (url.contains("indeed.com")) {
+                    return extractFromIndeed(page);
                 }
 
-                List<JobDto> jobs = extractFromMosaicData(page);
-                if (jobs.isEmpty()) {
-                    jobs = extractWithSelectors(page);
-                }
-
-                return jobs;
+                return extractFromIndeed(page);
 
             } catch (Exception e) {
                 MyLogger.err("JobPlaywrightStrategy: Extraction error for " + url + ": " + e.getMessage());
@@ -483,71 +499,137 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
         return jobs;
     }
 
-    private List<JobDto> extractFromMosaicData(Page page) {
+    private List<JobDto> extractFromIndeed(Page page) {
         List<JobDto> jobs = new ArrayList<>();
         try {
-            String scriptContent = (String) page.evaluate("() => document.getElementById('mosaic-data') ? document.getElementById('mosaic-data').textContent : null");
+            MyLogger.info("JobPlaywrightStrategy: Extracting Indeed jobs...");
+            // 1. Direct window extraction (Mosaic provider data in page memory)
+            String scriptJson = (String) page.evaluate("() => {\n" +
+                "  try {\n" +
+                "    if (window.mosaic && window.mosaic.providerData) {\n" +
+                "      for (const k of Object.keys(window.mosaic.providerData)) {\n" +
+                "        const d = window.mosaic.providerData[k];\n" +
+                "        if (d && d.results && Array.isArray(d.results) && d.results.length > 0) return JSON.stringify(d.results);\n" +
+                "      }\n" +
+                "    }\n" +
+                "    if (window.mosaic && window.mosaic.initialData) return JSON.stringify(window.mosaic.initialData);\n" +
+                "    const el = document.getElementById('mosaic-data');\n" +
+                "    if (el && el.textContent) return el.textContent;\n" +
+                "  } catch(e) {}\n" +
+                "  return null;\n" +
+                "}");
 
-            if (scriptContent != null) {
-                // Indeed sometimes wraps the JSON in window.mosaic.initialData = { ... };
-                String jsonPart = scriptContent;
-                if (scriptContent.contains("window.mosaic.initialData")) {
-                    int start = scriptContent.indexOf("{");
-                    int end = scriptContent.lastIndexOf("}");
-                    if (start != -1 && end != -1 && end > start) {
-                        jsonPart = scriptContent.substring(start, end + 1);
-                    }
-                }
-
-                JsonNode root = objectMapper.readTree(jsonPart);
-                JsonNode results = root.findValue("results");
-
-                if (results != null && results.isArray()) {
-                    for (JsonNode node : results) {
-                        jobs.add(JobDto.builder()
-                                .title(node.path("title").asText())
-                                .company(node.path("company").asText())
-                                .location(node.path("formattedLocation").asText())
-                                .link("https://www.indeed.com/viewjob?jk=" + node.path("jobkey").asText())
-                                .salary(node.path("salaryText").path("text").asText("Not disclosed"))
-                                .datePosted(node.path("formattedRelativeTime").asText())
-                                .source("Indeed (Playwright)")
-                                .build());
-                    }
+            if (scriptJson != null && !scriptJson.isBlank()) {
+                jobs = parseIndeedJson(scriptJson);
+                if (!jobs.isEmpty()) {
+                    MyLogger.info("JobPlaywrightStrategy: Indeed extracted " + jobs.size() + " jobs from memory/Mosaic JSON");
+                    return jobs;
                 }
             }
-        } catch (Exception e) {
-            MyLogger.err("JobPlaywrightStrategy: Mosaic parsing error: " + e.getMessage());
-        }
-        return jobs;
-    }
 
-    private List<JobDto> extractWithSelectors(Page page) {
-        List<JobDto> jobs = new ArrayList<>();
-        try {
-            Locator cards = page.locator(".job_seen_beacon");
-            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000)); } catch (Exception ignored) {}
-            
+            // 2. DOM selectors fallback
+            Locator cards = page.locator(".job_seen_beacon, div.cardOutline, li:has(a.jcs-JobTitle), div[data-testid='slider_item'], td.resultContent");
+            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(8000)); } catch (Exception ignored) {}
+
             int count = cards.count();
+            MyLogger.info("JobPlaywrightStrategy: Indeed DOM card count: " + count);
 
             for (int i = 0; i < count; i++) {
                 Locator card = cards.nth(i);
                 try {
-                    String title = card.locator("h2.jobTitle").innerText();
-                    String company = card.locator("[data-testid='company-name']").innerText();
-                    String location = card.locator("[data-testid='text-location']").innerText();
-                    String link = card.locator("a.jcs-JobTitle").getAttribute("href");
+                    String title = "";
+                    Locator titleLoc = card.locator("h2.jobTitle span[title], a.jcs-JobTitle span, h2.jobTitle a, [data-testid='jobTitle'], h2.jobTitle");
+                    if (titleLoc.count() > 0) title = titleLoc.first().innerText().trim();
+
+                    if (title.isEmpty()) continue;
+
+                    String company = "";
+                    Locator compLoc = card.locator("[data-testid='company-name'], span.companyName, span.css-63koeb");
+                    if (compLoc.count() > 0) company = compLoc.first().innerText().trim();
+
+                    String location = "";
+                    Locator locLoc = card.locator("[data-testid='text-location'], div.companyLocation");
+                    if (locLoc.count() > 0) location = locLoc.first().innerText().trim();
+
+                    String link = "";
+                    Locator linkLoc = card.locator("a.jcs-JobTitle, h2.jobTitle a, a[data-jk]");
+                    if (linkLoc.count() > 0) link = linkLoc.first().getAttribute("href");
+
+                    if (link == null || link.isEmpty()) {
+                        String jk = card.getAttribute("data-jk");
+                        if (jk != null && !jk.isEmpty()) {
+                            link = "https://in.indeed.com/viewjob?jk=" + jk;
+                        }
+                    } else if (!link.startsWith("http")) {
+                        link = "https://in.indeed.com" + link;
+                    }
+
+                    String salary = "Not disclosed";
+                    Locator salLoc = card.locator("[data-testid='attribute_snippet_testid'], .salary-snippet-container, .estimated-salary");
+                    if (salLoc.count() > 0) {
+                        String sText = salLoc.first().innerText().trim();
+                        if (!sText.isEmpty()) salary = sText;
+                    }
 
                     jobs.add(JobDto.builder()
                             .title(title)
-                            .company(company)
-                            .location(location)
-                            .link(link != null ? (link.startsWith("http") ? link : "https://www.indeed.com" + link) : "")
-                            .source("Indeed (Playwright-fallback)")
+                            .company(company.isEmpty() ? "Company Confidential" : company)
+                            .location(location.isEmpty() ? "India" : location)
+                            .link(link != null ? link : "")
+                            .salary(salary)
+                            .source("Indeed (Playwright)")
                             .build());
                 } catch (Exception ignored) {}
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            MyLogger.err("JobPlaywrightStrategy: Indeed extraction error: " + e.getMessage());
+        }
+        return jobs;
+    }
+
+    private List<JobDto> parseIndeedJson(String json) {
+        List<JobDto> jobs = new ArrayList<>();
+        try {
+            String jsonPart = json;
+            int start = jsonPart.indexOf('{');
+            int end = jsonPart.lastIndexOf('}');
+            if (start != -1 && end > start && !jsonPart.trim().startsWith("[")) {
+                jsonPart = jsonPart.substring(start, end + 1);
+            }
+
+            JsonNode root = objectMapper.readTree(jsonPart);
+            JsonNode results = root.isArray() ? root : root.findValue("results");
+
+            if (results != null && results.isArray()) {
+                for (JsonNode node : results) {
+                    String title = node.path("title").asText();
+                    if (title.isEmpty()) title = node.path("jobTitle").asText();
+                    if (title.isEmpty()) continue;
+
+                    String company = node.path("company").asText();
+                    String loc = node.path("formattedLocation").asText();
+                    if (loc.isEmpty()) loc = node.path("location").asText();
+
+                    String jobKey = node.path("jobkey").asText();
+                    String link = !jobKey.isEmpty() ? "https://in.indeed.com/viewjob?jk=" + jobKey : "";
+
+                    String salary = node.path("salaryText").path("text").asText("Not disclosed");
+                    String date = node.path("formattedRelativeTime").asText();
+
+                    jobs.add(JobDto.builder()
+                            .title(title)
+                            .company(company.isEmpty() ? "Company Confidential" : company)
+                            .location(loc.isEmpty() ? "India" : loc)
+                            .link(link)
+                            .salary(salary)
+                            .datePosted(date)
+                            .source("Indeed (Playwright-JSON)")
+                            .build());
+                }
+            }
+        } catch (Exception e) {
+            MyLogger.err("JobPlaywrightStrategy: parseIndeedJson error: " + e.getMessage());
+        }
         return jobs;
     }
 
