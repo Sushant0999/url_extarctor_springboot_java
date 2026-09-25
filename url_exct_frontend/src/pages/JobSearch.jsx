@@ -247,6 +247,7 @@ export default function JobSearch() {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
+            try {
                 const platformFilters = { 
                     ...filters, 
                     platforms: [platform], 
