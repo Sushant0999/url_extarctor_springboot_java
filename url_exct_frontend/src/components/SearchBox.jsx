@@ -118,8 +118,7 @@ export default function SearchBox() {
 
                     const bulkData = await getBulkResults(completedIds);
                     const finalDataArray = completedIds.map(id => {
-                        const data = bulkData[id];
-                        data.taskId = id;
+                        const data = bulkData && bulkData[id] ? { ...bulkData[id], taskId: id } : { taskId: id };
                         return data;
                     });
 

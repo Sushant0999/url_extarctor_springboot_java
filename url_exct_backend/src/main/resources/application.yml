@@ -6,20 +6,25 @@ micronaut:
     cors:
       enabled: true
       configurations:
-        all:
-          allowed-origins:
+        web:
+          allowedOrigins:
             - "http://localhost:3000"
             - "http://localhost:5173"
+            - "http://127.0.0.1:3000"
+            - "http://127.0.0.1:5173"
+            - "^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$"
             - "https://url-extarctor-springboot-java.vercel.app"
-          allowed-methods:
+          allowedMethods:
             - GET
             - POST
             - PUT
             - DELETE
             - OPTIONS
-          allowed-headers:
+            - HEAD
+          allowedHeaders:
             - "*"
-          max-age: 3600
+          allowCredentials: true
+          maxAge: 3600
     multipart:
       max-file-size: 25MB
   router:
@@ -37,6 +42,12 @@ endpoints:
   all:
     enabled: true
     sensitive: false
+  health:
+    enabled: true
+    sensitive: false
+    details-visible: ANONYMOUS
+    rabbitmq:
+      enabled: false
 
 # Groq API Configuration
 groq:
@@ -53,4 +64,4 @@ app:
   rabbitmq:
     enabled: false
   allowed:
-    origins: "http://localhost:3000,http://localhost:5173,https://url-extarctor-springboot-java.vercel.app"
+    origins: "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173,https://url-extarctor-springboot-java.vercel.app"

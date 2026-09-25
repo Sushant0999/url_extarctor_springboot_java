@@ -27,4 +27,43 @@ public class JobSearchFilter {
     private List<String> platforms; // ["indeed", "linkedin", "naukri"]
     private List<String> companies; // ["Google", "TCS"]
     private Integer page; // Current page to search
+
+    public String getQuery() { return query; }
+    public void setQuery(String query) { this.query = query; }
+
+    public List<String> getLocations() { return locations; }
+    public void setLocations(List<String> locations) { this.locations = locations; }
+
+    public String getJobType() { return jobType; }
+    public void setJobType(String jobType) { this.jobType = jobType; }
+
+    public Integer getDistance() { return distance; }
+    public void setDistance(Integer distance) { this.distance = distance; }
+
+    public Integer getDatePosted() { return datePosted; }
+    public void setDatePosted(Integer datePosted) { this.datePosted = datePosted; }
+
+    public List<String> getSkills() { return skills; }
+    public void setSkills(List<String> skills) { this.skills = skills; }
+
+    public String getAdditionalKeywords() { return additionalKeywords; }
+    public void setAdditionalKeywords(String additionalKeywords) { this.additionalKeywords = additionalKeywords; }
+
+    public String getWorkMode() { return workMode; }
+    public void setWorkMode(String workMode) { this.workMode = workMode; }
+
+    public String getExperienceLevel() { return experienceLevel; }
+    public void setExperienceLevel(String experienceLevel) { this.experienceLevel = experienceLevel; }
+
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
+
+    public List<String> getPlatforms() { return platforms; }
+    public void setPlatforms(List<String> platforms) { this.platforms = platforms; }
+
+    public List<String> getCompanies() { return companies; }
+    public void setCompanies(List<String> companies) { this.companies = companies; }
+
+    public Integer getPage() { return page; }
+    public void setPage(Integer page) { this.page = page; }
 }

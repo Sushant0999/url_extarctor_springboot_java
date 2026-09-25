@@ -14,14 +14,14 @@ import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-@Controller("/actuator/frontend")
+@Controller
 @Tag(name = "Actuator for Frontend", description = "Consolidated system status and health for the dashboard.")
 public class SystemStatusController {
 
     @Inject
     private TaskTrackerService taskTrackerService;
 
-    @Get("/status")
+    @Get("/actuator/frontend/status")
     @Operation(summary = "Get application and system overview")
     public HttpResponse<SystemStatusResponse> getSystemStatus() {
         SystemStatusResponse status = SystemStatusResponse.builder()
@@ -32,6 +32,38 @@ public class SystemStatusController {
                 .components(getComponentStatus())
                 .build();
         return HttpResponse.ok(status);
+    }
+
+    @Get("/actuator/health")
+    @Operation(summary = "Actuator Health check")
+    public HttpResponse<Map<String, Object>> getActuatorHealth() {
+        return HttpResponse.ok(Map.of("status", "UP"));
+    }
+
+    @Get("/health")
+    @Operation(summary = "Health check")
+    public HttpResponse<Map<String, Object>> getHealth() {
+        return HttpResponse.ok(Map.of("status", "UP"));
+    }
+
+    @Get("/actuator/info")
+    @Operation(summary = "Application info")
+    public HttpResponse<Map<String, Object>> getInfo() {
+        return HttpResponse.ok(Map.of(
+                "app", Map.of("name", "urlExtractor", "framework", "Micronaut 4.7.6"),
+                "status", "UP"
+        ));
+    }
+
+    @Get("/actuator/metrics")
+    @Operation(summary = "Application metrics")
+    public HttpResponse<Map<String, Object>> getMetrics() {
+        Runtime runtime = Runtime.getRuntime();
+        return HttpResponse.ok(Map.of(
+                "totalMemoryMB", runtime.totalMemory() / (1024 * 1024),
+                "freeMemoryMB", runtime.freeMemory() / (1024 * 1024),
+                "activeTasks", taskTrackerService.totalTasksCount()
+        ));
     }
 
     private SystemStatusResponse.MemoryInfo getMemoryInfo() {
