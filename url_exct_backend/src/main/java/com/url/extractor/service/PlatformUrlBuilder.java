@@ -23,19 +23,32 @@ public class PlatformUrlBuilder {
     }
     
     private String buildShineUrl(JobSearchFilter filter) {
+        // Shine uses Next.js slug-based routing — ?q= param is IGNORED by the router.
+        // Correct format: /job-search/java-developer-jobs or /job-search/java-developer-jobs-in-mumbai
         String optimized = getOptimizedQuery(filter, 3);
-        String url = "https://www.shine.com/job-search/jobs?q=" + URLEncoder.encode(optimized, StandardCharsets.UTF_8);
+        String slug = optimized.toLowerCase()
+                .replaceAll("[^a-z0-9\\s]", "")
+                .trim()
+                .replaceAll("\\s+", "-");
+
         String location = "";
         if (filter.getLocations() != null && !filter.getLocations().isEmpty()) {
             location = filter.getLocations().get(0);
         } else if (filter.getCountry() != null && !filter.getCountry().isEmpty()) {
-            location = getFullCountryName(filter.getCountry());
+            String country = getFullCountryName(filter.getCountry());
+            if (!country.equalsIgnoreCase("India")) {
+                location = country;
+            }
         }
+
+        StringBuilder url = new StringBuilder("https://www.shine.com/job-search/").append(slug).append("-jobs");
         if (!location.isEmpty()) {
-            url += "&loc=" + URLEncoder.encode(location, StandardCharsets.UTF_8);
+            String locSlug = location.toLowerCase().trim().replaceAll("[^a-z0-9\\s]", "").replaceAll("\\s+", "-");
+            url.append("-in-").append(locSlug);
         }
-        url += "&sort=1"; // Sort by freshness
-        return url;
+        // Keep ?sort=1 for freshness and add q= as secondary signal (some versions use it)
+        url.append("?sort=1&q=").append(URLEncoder.encode(optimized, StandardCharsets.UTF_8));
+        return url.toString();
     }
 
     private String buildHiristUrl(JobSearchFilter filter) {

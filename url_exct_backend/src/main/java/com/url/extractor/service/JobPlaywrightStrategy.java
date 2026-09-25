@@ -78,7 +78,7 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
                     return extractFromInternshala(page);
                 } else if (url.contains("shine.com")) {
                     return extractFromShine(page);
-                } else if (url.contains("hirist.com")) {
+                } else if (url.contains("hirist.tech") || url.contains("hirist.com")) {
                     return extractFromHirist(page);
                 }
 
@@ -105,37 +105,66 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
     private List<JobDto> extractFromNaukri(Page page) {
         List<JobDto> jobs = new ArrayList<>();
         try {
-            // Naukri uses article.jobTuple or .cust-job-tuple
-            Locator cards = page.locator("article.jobTuple, .cust-job-tuple, [class*='jobTuple']");
-            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(10000)); } catch (Exception ignored) {}
-            
+            // Naukri 2025: uses article[data-job-id] or [class*='srp-jobtuple-wrapper'] or [class*='jobTuple']
+            Locator cards = page.locator(
+                "article[data-job-id], " +
+                "[class*='srp-jobtuple-wrapper'], " +
+                "article.jobTuple, " +
+                ".cust-job-tuple, " +
+                "[class*='jobTuple']"
+            );
+            try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(12000)); } catch (Exception ignored) {}
+
             int count = cards.count();
             if (count == 0) {
                 try {
                     java.nio.file.Files.writeString(java.nio.file.Paths.get("debug_naukri.html"), page.innerHTML("body"));
+                    MyLogger.warn("JobPlaywrightStrategy: Dumped Naukri HTML to debug_naukri.html for selector debugging.");
                 } catch (Exception e) {}
             }
             MyLogger.info("JobPlaywrightStrategy: Found " + count + " Naukri job cards.");
 
+            int success = 0;
             for (int i = 0; i < count; i++) {
                 Locator card = cards.nth(i);
                 try {
-                    String title = card.locator("a.title, .title").innerText().trim();
-                    String company = card.locator("a.subTitle, .comp-name, .company-name").innerText().trim();
-                    String location = card.locator(".locWraper, .loc-wrap").innerText().trim();
-                    String link = card.locator("a.title, .title").getAttribute("href");
-                    String date = card.locator(".job-post-day, .posted-day").innerText().trim();
+                    // 2025 selectors: data attributes preferred, fall back to class names
+                    String title = safeText(card, 
+                        "a.title, [class*='title'], .jobTitle, a[class*='jobtitle'], h2 a, h3 a");
+                    if (title.isEmpty()) continue;
+
+                    String company = safeText(card,
+                        "a.subTitle, [class*='comp-name'], [class*='companyInfo'], " +
+                        "[class*='company-name'], .company-name, [class*='company']");
+                    String location = safeText(card,
+                        "[class*='locWrp'], [class*='locWraper'], [class*='loc-wrap'], " +
+                        ".loc-wrap, [class*='location'], [class*='naukri__location']");
+                    String salary = safeText(card,
+                        "[class*='salary'], [class*='sal'], [class*='compensation']");
+                    String date = safeText(card,
+                        ".job-post-day, [class*='posted'], [class*='freshness']");
+
+                    // Link: prefer data-job-id anchor
+                    String link = null;
+                    try { link = card.locator("a.title, a[class*='jobtitle'], a[class*='title']").first().getAttribute("href"); } catch (Exception ignored) {}
+                    if (link == null) { try { link = card.locator("a").first().getAttribute("href"); } catch (Exception ig) {} }
+                    if (link != null && !link.startsWith("http")) link = "https://www.naukri.com" + link;
 
                     jobs.add(JobDto.builder()
                             .title(title)
-                            .company(company)
-                            .location(location)
+                            .company(company.isEmpty() ? "Unknown" : company)
+                            .location(location.isEmpty() ? null : location)
+                            .salary(salary.isEmpty() ? null : salary)
                             .link(link)
-                            .datePosted(date)
+                            .datePosted(date.isEmpty() ? null : date)
                             .source("Naukri")
                             .build());
-                } catch (Exception ignored) {}
+                    success++;
+                } catch (Exception e) {
+                    MyLogger.warn("JobPlaywrightStrategy: Naukri card " + i + " failed: " + e.getMessage());
+                }
             }
+            MyLogger.info("JobPlaywrightStrategy: Naukri extracted " + success + "/" + count + " jobs.");
         } catch (Exception e) {
             MyLogger.err("JobPlaywrightStrategy: Naukri extraction failed: " + e.getMessage());
         }
@@ -251,9 +280,47 @@ public class JobPlaywrightStrategy implements JobExtractionStrategy {
     private List<JobDto> extractFromShine(Page page) {
         List<JobDto> jobs = new ArrayList<>();
         try {
-            // Shine migrated to Next.js CSS Modules (hashed classes like result-card_hit__tL8tN).
-            // The stable anchor used is: article > a[class*='result-card_hit'] OR any <article> element.
-            // The aria-label on the anchor contains "Job Title at Company Name".
+            // Shine is Next.js. Try __NEXT_DATA__ JSON extraction first — most reliable.
+            try {
+                String nextData = (String) page.evaluate(
+                    "() => { const el = document.getElementById('__NEXT_DATA__'); return el ? el.textContent : null; }"
+                );
+                if (nextData != null && !nextData.isBlank()) {
+                    com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(nextData);
+                    // Shine stores job results under pageProps.jobResults.hits or similar
+                    com.fasterxml.jackson.databind.JsonNode hits = root.at("/props/pageProps/jobResults/hits");
+                    if (hits == null || hits.isMissingNode()) hits = root.findValue("hits");
+                    if (hits != null && hits.isArray() && hits.size() > 0) {
+                        MyLogger.info("JobPlaywrightStrategy: Shine __NEXT_DATA__ found " + hits.size() + " hits.");
+                        for (com.fasterxml.jackson.databind.JsonNode hit : hits) {
+                            String title = hit.path("designation").asText("");
+                            if (title.isEmpty()) title = hit.path("jobTitle").asText("");
+                            if (title.isEmpty()) title = hit.path("title").asText("");
+                            if (title.isEmpty()) continue;
+                            String company = hit.path("company").path("name").asText("");
+                            if (company.isEmpty()) company = hit.path("companyName").asText("Unknown");
+                            String location = hit.path("location").asText("");
+                            if (location.isEmpty()) location = hit.path("city").asText("");
+                            String salary = hit.path("salary").asText("");
+                            String jobId = hit.path("jobId").asText("");
+                            String slug = hit.path("slug").asText("");
+                            String link = slug.isEmpty() ? (jobId.isEmpty() ? null : "https://www.shine.com/jobs/" + jobId)
+                                                        : "https://www.shine.com/jobs/" + slug;
+                            jobs.add(JobDto.builder()
+                                    .title(title).company(company)
+                                    .location(location.isEmpty() ? null : location)
+                                    .salary(salary.isEmpty() ? null : salary)
+                                    .link(link).source("Shine").build());
+                        }
+                        return jobs;
+                    }
+                }
+            } catch (Exception e) {
+                MyLogger.warn("JobPlaywrightStrategy: Shine __NEXT_DATA__ extraction failed: " + e.getMessage());
+            }
+
+            // DOM fallback: Confirmed live selectors (verified 2025-09-25)
+            // Card: <article>, Link: <a class='result-card_hit__HASH' aria-label='Title at Company'>
             Locator cards = page.locator("article");
             try { cards.first().waitFor(new Locator.WaitForOptions().setTimeout(15000)); } catch (Exception ignored) {}
 
